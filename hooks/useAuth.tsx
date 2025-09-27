@@ -1,83 +1,96 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import { useRouter, useSegments } from 'expo-router';
+import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+
+interface Session {
+  user: {
+    id: string;
+    email: string;
+    name: string;
+  };
+  token: {
+    accessToken: string;
+    refreshToken: string;
+  };
+}
 
 const AuthContext = createContext<{
   signIn: (email, password) => Promise<void>;
   signOut: () => void;
-  session?: string | null;
+  signUp: (email, password, name) => Promise<void>;
+  session?: Session | null;
   isLoading: boolean;
 }>({
   signIn: () => Promise.resolve(),
-  signOut: () => {},
+  signOut: () => { },
+  signUp: () => Promise.resolve(),
   session: null,
   isLoading: false,
 });
 
-// This hook will protect the route access based on user authentication.
-function useProtectedRoute(session) {
-  const segments = useSegments();
-  const router = useRouter();
-
-  useEffect(() => {
-    const inAuthGroup = segments[0] === '(auth)';
-
-    if (
-      // If the user is not signed in and the initial segment is not anything in the auth group.
-      !session &&
-      !inAuthGroup
-    ) {
-      // Redirect to the sign-in page.
-      router.replace('/login');
-    } else if (session && inAuthGroup) {
-      // Redirect away from the sign-in page.
-      router.replace('/');
-    }
-  }, [session, segments, router]);
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<string | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     const loadSession = async () => {
       const storedSession = await AsyncStorage.getItem('session');
-      setSession(storedSession);
+      if (storedSession) {
+        setSession(JSON.parse(storedSession));
+      }
       setIsLoading(false);
     };
     loadSession();
   }, []);
 
-  useProtectedRoute(session);
-
   const signIn = async (email, password) => {
     try {
-      // NOTE: Replace with your actual backend URL
-      const response = await axios.post('http://localhost:3000/api/auth/callback/credentials', {
+      const response = await axios.post('http://localhost:3000/api/auth/login', {
         email,
         password,
-        redirect: false,
       });
-      
-      // The actual session token is usually in a cookie handled by the browser.
-      // For mobile, next-auth returns a session object. We'll just store a simple flag.
-      const sessionValue = JSON.stringify(response.data);
-      await AsyncStorage.setItem('session', sessionValue);
+
+      const sessionValue = response.data;
+      await AsyncStorage.setItem('session', JSON.stringify(sessionValue));
       setSession(sessionValue);
 
     } catch (e) {
       console.error("Sign in failed", e);
-      alert("Sign in failed. Check console for details.");
+      if (axios.isAxiosError(e) && e.response) {
+        alert(`Sign in failed: ${e.response.data.error || 'An error occurred'}`);
+      } else {
+        alert("Sign in failed. Check console for details.");
+      }
     }
   };
 
   const signOut = async () => {
     await AsyncStorage.removeItem('session');
     setSession(null);
-    // Also call the next-auth signout endpoint
-    await axios.post('http://localhost:3000/api/auth/signout');
+    // You might want to call a backend endpoint to invalidate the token here
+    // For now, we just clear the local session
+  };
+
+  const signUp = async (email, password, name) => {
+    try {
+      // NOTE: Replace with your actual backend URL
+      await axios.post('http://localhost:3000/api/auth/signup', {
+        email,
+        password,
+        name,
+      });
+      // Go to login page after successful sign up
+      router.push('/login');
+    } catch (e) {
+      console.error("Sign up failed", e);
+      if (axios.isAxiosError(e) && e.response) {
+        alert(`Sign up failed: ${e.response.data.error || 'An error occurred'}`);
+      } else {
+        alert("Sign up failed. Check console for details.");
+      }
+    }
   };
 
   return (
@@ -85,6 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         signIn,
         signOut,
+        signUp,
         session,
         isLoading,
       }}>
