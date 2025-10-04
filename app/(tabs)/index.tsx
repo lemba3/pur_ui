@@ -1,119 +1,169 @@
-import React, { useState } from 'react';
-import { StyleSheet, Button, View, Text, Alert, ScrollView } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { StyleSheet, Button, View, Text, Alert, FlatList, Image, ActivityIndicator } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import api from '@/lib/api';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { create, open, LinkSuccess, LinkExit } from 'react-native-plaid-link-sdk';
+
+import * as Application from 'expo-application';
+
+interface ConnectedBank {
+  itemId: string;
+  institution: {
+    name: string;
+    logo?: string;
+  };
+}
 
 export default function HomeScreen() {
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [report, setReport] = useState<any | null>(null);
+  const [connectedBanks, setConnectedBanks] = useState<ConnectedBank[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [packageName, setPackageName] = useState<string | null>(null);
 
-  const getSandboxAccessToken = async () => {
+  useEffect(() => {
+    const getPackageName = async () => {
+      const androidPackageName = Application.applicationId;
+      setPackageName(androidPackageName);
+    };
+    getPackageName();
+  }, []);
+
+  const fetchConnectedBanks = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await api.post('/plaid/create-sandbox-access-token');
-      const { access_token } = response.data;
-      setAccessToken(access_token);
-      Alert.alert("Success", "Sandbox access token obtained successfully!");
+      const response = await api.get('http://localhost:3000/api/plaid/items');
+      setConnectedBanks(response.data);
     } catch (error: any) {
-      console.error('Error getting access token:', error.response?.data || error.message);
-      Alert.alert("Error", "Could not obtain access token. See console for details.");
+      console.error('Error fetching connected banks:', error.response?.data || error.message);
+      Alert.alert("Error", "Could not fetch connected banks.");
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const generateReport = async () => {
-    if (!accessToken) {
-      Alert.alert("Error", "You must obtain an access token first.");
-      return;
-    }
+  useEffect(() => {
+    fetchConnectedBanks();
+  }, [fetchConnectedBanks]);
+
+  const handleAddBank = useCallback(async () => {
+    console.log('handleAddBank called');
     setIsLoading(true);
-    setReport(null);
     try {
-      const response = await api.post('/plaid/generate-report', {
-        access_token: accessToken,
-        amount: 100, // Example amount
-        buyerName: "Test Buyer",
-        reason: "Verification for loan application"
+      console.log('Fetching link token...');
+      const response = await api.post('http://localhost:3000/api/plaid/create-link-token');
+      const linkToken = response.data.link_token;
+      console.log('Link token received:', linkToken);
+
+      if (!linkToken) {
+        console.error('Link token is null or undefined');
+        Alert.alert("Error", "Failed to get link token.");
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('Calling create() with link token...');
+      create({ token: linkToken });
+      console.log('create() called.');
+
+      console.log('Calling open()...');
+      open({
+        onSuccess: async (success: LinkSuccess) => {
+          console.log('Plaid link success:', success);
+          try {
+            await api.post('http://localhost:3000/api/plaid/exchange-public-token', { public_token: success.publicToken });
+            Alert.alert("Success", "Bank account linked successfully!");
+            fetchConnectedBanks(); // Refresh the list of banks
+          } catch (error: any) {
+            console.error('Error exchanging public token:', error.response?.data || error.message);
+            Alert.alert("Error", "Could not link bank account.");
+          }
+        },
+        onExit: (exit: LinkExit) => {
+          console.log('Plaid link exit:', exit);
+          if (exit.error) {
+            Alert.alert("Error", JSON.stringify(exit.error));
+          }
+        },
       });
-      setReport(response.data);
-      Alert.alert("Report Generated", "The verification report has been successfully generated.");
-    } catch (error: any) { // Added missing brace here
-      console.error('Error generating report:', error.response?.data || error.message);
-      const errorMessage = error.response?.data?.displayMessage || error.response?.data?.message || "Could not generate report. See console for details.";
-      Alert.alert("Error", errorMessage);
+      console.log('open() called.');
+
+    } catch (error: any) {
+      console.error('Error in handleAddBank:', error.response?.data || error.message);
+      Alert.alert("Error", "An error occurred while adding the bank.");
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [fetchConnectedBanks]);
+
+  const renderBankItem = ({ item }: { item: ConnectedBank }) => (
+    <View style={styles.bankItemContainer}>
+      {item.institution.logo && (
+        <Image
+          source={{ uri: `data:image/png;base64,${item.institution.logo}` }}
+          style={styles.bankLogo}
+        />
+      )}
+      <ThemedText>{item.institution.name}</ThemedText>
+    </View>
+  );
 
   return (
-    <ScrollView>
+    <SafeAreaView style={styles.safeArea}>
       <ThemedView style={styles.container}>
-        <ThemedText type="title">Plaid Verification</ThemedText>
-        
-        <View style={styles.stepContainer}>
-          <ThemedText type="subtitle">Step 1: Get Sandbox Access Token</ThemedText>
-          <ThemedText>This will create a sandbox user and get an access token.</ThemedText>
-          <Button
-            title="Get Sandbox Token"
-            onPress={getSandboxAccessToken}
-            disabled={isLoading}
-          />
-          {accessToken && <ThemedText style={styles.successText}>Access Token obtained.</ThemedText>}
-        </View>
+        <ThemedText type="title">Connected Banks ({packageName})</ThemedText>
 
-        <View style={styles.stepContainer}>
-          <ThemedText type="subtitle">Step 2: Generate Report</ThemedText>
-          <Button
-            title="Generate Verification Report"
-            onPress={generateReport}
-            disabled={!accessToken || isLoading}
-          />
-        </View>
+        {isLoading && <ActivityIndicator size="large" color="#0000ff" />}
 
-        {isLoading && <Text>Loading...</Text>}
+        <FlatList
+          data={connectedBanks}
+          renderItem={renderBankItem}
+          keyExtractor={(item) => item.itemId}
+          ListEmptyComponent={() => (
+            !isLoading && (
+              <View style={styles.emptyListContainer}>
+                <ThemedText>No banks connected yet.</ThemedText>
+              </View>
+            )
+          )}
+        />
 
-        {report && (
-          <View style={styles.reportContainer}>
-            <ThemedText type="subtitle">Report Details</ThemedText>
-            <ThemedText>Report ID: {report.verificationReport.reportId}</ThemedText>
-            <ThemedText>Status: {report.verificationReport.status}</ThemedText>
-            <ThemedText>Buyer: {report.verificationReport.details.buyerName}</ThemedText>
-            <ThemedText>Amount: ${report.verificationReport.details.amount}</ThemedText>
-          </View>
-        )}
+        <Button
+          title="Add Bank"
+          onPress={handleAddBank}
+          disabled={isLoading}
+        />
       </ThemedView>
-    </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    padding: 16,
-    gap: 16,
+    // padding: 16,
+    // gap: 16,
   },
-  stepContainer: {
-    gap: 8,
+  bankItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
     marginBottom: 8,
-    padding: 16,
     borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 8,
   },
-  successText: {
-    color: 'green',
-    fontWeight: 'bold',
+  bankLogo: {
+    width: 40,
+    height: 40,
+    marginRight: 16,
+    resizeMode: 'contain',
   },
-  reportContainer: {
-    marginTop: 16,
-    gap: 8,
-    padding: 16,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 8,
-  }
+  emptyListContainer: {
+    alignItems: 'center',
+    marginTop: 20,
+  },
 });

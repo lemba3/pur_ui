@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
 
 interface Session {
@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const loadSession = async () => {
-      const storedSession = await AsyncStorage.getItem('session');
+      const storedSession = await SecureStore.getItemAsync('session');
       if (storedSession) {
         setSession(JSON.parse(storedSession));
       }
@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       const sessionValue = response.data;
-      await AsyncStorage.setItem('session', JSON.stringify(sessionValue));
+      await SecureStore.setItemAsync('session', JSON.stringify(sessionValue));
       setSession(sessionValue);
 
     } catch (e) {
@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    await AsyncStorage.removeItem('session');
+    await SecureStore.deleteItemAsync('session');
     setSession(null);
     // You might want to call a backend endpoint to invalidate the token here
     // For now, we just clear the local session
