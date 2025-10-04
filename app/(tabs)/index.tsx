@@ -5,6 +5,8 @@ import { ThemedView } from '@/components/themed-view';
 import api from '@/lib/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { create, open, LinkSuccess, LinkExit } from 'react-native-plaid-link-sdk';
+import { useRouter } from 'expo-router';
+import InputModal from '@/components/ui/input-modal';
 
 import * as Application from 'expo-application';
 
@@ -20,6 +22,8 @@ export default function HomeScreen() {
   const [connectedBanks, setConnectedBanks] = useState<ConnectedBank[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [packageName, setPackageName] = useState<string | null>(null);
+  const [isModalVisible, setModalVisible] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const getPackageName = async () => {
@@ -96,6 +100,37 @@ export default function HomeScreen() {
     }
   }, [fetchConnectedBanks]);
 
+  const handleGenerateReport = useCallback(() => {
+    setModalVisible(true);
+  }, []);
+
+  const handleVerifyAmount = useCallback(async (amount: string) => {
+    const numericAmount = parseFloat(amount);
+    if (isNaN(numericAmount) || numericAmount <= 0) {
+      Alert.alert("Error", "Please enter a valid positive amount.");
+      return;
+    }
+
+    setModalVisible(false);
+    setIsLoading(true);
+    try {
+      const response = await api.post('http://localhost:3000/api/plaid/generate-report', { amount: numericAmount });
+      const { accounts, ...rest } = response.data;
+      router.push({
+        pathname: '/verification-result',
+        params: {
+          ...rest,
+          accounts: JSON.stringify(accounts),
+        },
+      });
+    } catch (error: any) {
+      console.error('Error verifying amount:', error.response?.data || error.message);
+      Alert.alert("Error", error.response?.data?.error || "Could not verify amount.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [router]);
+
   const renderBankItem = ({ item }: { item: ConnectedBank }) => (
     <View style={styles.bankItemContainer}>
       {item.institution.logo && (
@@ -109,7 +144,7 @@ export default function HomeScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <ThemedView style={styles.container}>
         <ThemedText type="title">Connected Banks ({packageName})</ThemedText>
 
@@ -128,12 +163,27 @@ export default function HomeScreen() {
           )}
         />
 
-        <Button
-          title="Add Bank"
-          onPress={handleAddBank}
-          disabled={isLoading}
-        />
+        <View style={styles.buttonContainer}>
+          <Button
+            title="Add Bank"
+            onPress={handleAddBank}
+            disabled={isLoading}
+          />
+          <Button
+            title="Verify Balance"
+            onPress={handleGenerateReport}
+            disabled={isLoading || connectedBanks.length === 0}
+          />
+        </View>
       </ThemedView>
+      <InputModal
+        visible={isModalVisible}
+        onClose={() => setModalVisible(false)}
+        onSubmit={handleVerifyAmount}
+        title="Verify Account Balance"
+        inputLabel="Amount to Verify"
+        submitButtonText="Verify"
+      />
     </SafeAreaView>
   );
 }
@@ -144,8 +194,8 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    // padding: 16,
-    // gap: 16,
+    padding: 16,
+    gap: 16,
   },
   bankItemContainer: {
     flexDirection: 'row',
@@ -165,5 +215,8 @@ const styles = StyleSheet.create({
   emptyListContainer: {
     alignItems: 'center',
     marginTop: 20,
+  },
+  buttonContainer: {
+    gap: 8,
   },
 });

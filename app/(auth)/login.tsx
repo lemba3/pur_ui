@@ -28,7 +28,7 @@ export default function Login() {
       />
       <Button title="Sign In" onPress={() => signIn(email, password)} />
       <Link href="/signup" style={styles.link}>
-        <Text style={styles.linkText}>Don't have an account? Sign Up</Text>
+        <Text style={styles.linkText}>Don&apos;t have an account? Sign Up</Text>
       </Link>
     </View>
   );

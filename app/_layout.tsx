@@ -22,19 +22,6 @@ function RootLayoutNav() {
   const segments = useSegments();
 
   useEffect(() => {
-    // This is a workaround to initialize expo-keep-awake on app start.
-    const initKeepAwake = async () => {
-      try {
-        await activateKeepAwakeAsync('app-init');
-        await deactivateKeepAwake('app-init');
-      } catch (e) {
-        console.error('Failed to initialize keep-awake', e);
-      }
-    };
-    initKeepAwake();
-  }, []);
-
-  useEffect(() => {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === '(auth)';
@@ -61,6 +48,19 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+
+  useEffect(() => {
+    // This is a workaround to initialize expo-keep-awake on app start.
+    const initKeepAwake = async () => {
+      try {
+        await activateKeepAwakeAsync('app-init');
+        await deactivateKeepAwake('app-init');
+      } catch (e) {
+        console.error('Failed to initialize keep-awake', e);
+      }
+    };
+    initKeepAwake();
+  }, []);
 
   return (
     <AuthProvider>
