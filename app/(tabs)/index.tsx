@@ -146,18 +146,18 @@ export default function HomeScreen() {
 
         {isLoading && <ActivityIndicator size="large" color="#0000ff" />}
 
-        <FlatList
-          data={connectedBanks}
-          renderItem={renderBankItem}
-          keyExtractor={(item) => item.itemId}
-          ListEmptyComponent={() => (
-            !isLoading && (
+        {!isLoading && (
+          <FlatList
+            data={connectedBanks}
+            renderItem={renderBankItem}
+            keyExtractor={(item) => item.itemId}
+            ListEmptyComponent={() => (
               <View style={styles.emptyListContainer}>
                 <ThemedText>No banks connected yet.</ThemedText>
               </View>
-            )
-          )}
-        />
+            )}
+          />
+        )}
 
         <View style={styles.buttonContainer}>
           <Button
