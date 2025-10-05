@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, Button, View, Text, Alert, FlatList, Image, ActivityIndicator } from 'react-native';
+import { StyleSheet, Button, View, FlatList, Image, ActivityIndicator } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import api from '@/lib/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { create, open, LinkSuccess, LinkExit } from 'react-native-plaid-link-sdk';
+import { create, open, LinkSuccess, LinkExit, LinkIOSPresentationStyle, LinkLogLevel } from 'react-native-plaid-link-sdk';
 import { useRouter } from 'expo-router';
 import InputModal from '@/components/ui/input-modal';
 
-import * as Application from 'expo-application';
+import { useAuth } from '@/hooks/useAuth';
 
 interface ConnectedBank {
   itemId: string;
@@ -21,17 +21,8 @@ interface ConnectedBank {
 export default function HomeScreen() {
   const [connectedBanks, setConnectedBanks] = useState<ConnectedBank[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [packageName, setPackageName] = useState<string | null>(null);
   const [isModalVisible, setModalVisible] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    const getPackageName = async () => {
-      const androidPackageName = Application.applicationId;
-      setPackageName(androidPackageName);
-    };
-    getPackageName();
-  }, []);
 
   const fetchConnectedBanks = useCallback(async () => {
     setIsLoading(true);
@@ -40,15 +31,19 @@ export default function HomeScreen() {
       setConnectedBanks(response.data);
     } catch (error: any) {
       console.error('Error fetching connected banks:', error.response?.data || error.message);
-      Alert.alert("Error", "Could not fetch connected banks.");
+      console.error("Error: Could not fetch connected banks.", error.response?.data || error.message);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
+  const { session, isLoading: isAuthLoading } = useAuth();
+
   useEffect(() => {
-    fetchConnectedBanks();
-  }, [fetchConnectedBanks]);
+    if (!isAuthLoading && session) {
+      fetchConnectedBanks();
+    }
+  }, [fetchConnectedBanks, isAuthLoading, session]);
 
   const handleAddBank = useCallback(async () => {
     console.log('handleAddBank called');
@@ -61,13 +56,13 @@ export default function HomeScreen() {
 
       if (!linkToken) {
         console.error('Link token is null or undefined');
-        Alert.alert("Error", "Failed to get link token.");
+        console.error("Error: Failed to get link token.");
         setIsLoading(false);
         return;
       }
 
       console.log('Calling create() with link token...');
-      create({ token: linkToken });
+      create({ token: linkToken, noLoadingState: false });
       console.log('create() called.');
 
       console.log('Calling open()...');
@@ -76,25 +71,26 @@ export default function HomeScreen() {
           console.log('Plaid link success:', success);
           try {
             await api.post('http://localhost:3000/api/plaid/exchange-public-token', { public_token: success.publicToken });
-            Alert.alert("Success", "Bank account linked successfully!");
-            fetchConnectedBanks(); // Refresh the list of banks
+            console.log("Success: Bank account linked successfully!"); fetchConnectedBanks(); // Refresh the list of banks
           } catch (error: any) {
             console.error('Error exchanging public token:', error.response?.data || error.message);
-            Alert.alert("Error", "Could not link bank account.");
+            console.error("Error: Could not link bank account.", error.response?.data || error.message);
           }
         },
         onExit: (exit: LinkExit) => {
           console.log('Plaid link exit:', exit);
           if (exit.error) {
-            Alert.alert("Error", JSON.stringify(exit.error));
+            console.error("Plaid Link Exit Error:", JSON.stringify(exit.error));
           }
         },
+        iOSPresentationStyle: LinkIOSPresentationStyle.MODAL,
+        logLevel: LinkLogLevel.DEBUG, // log more for debugging
       });
       console.log('open() called.');
 
     } catch (error: any) {
       console.error('Error in handleAddBank:', error.response?.data || error.message);
-      Alert.alert("Error", "An error occurred while adding the bank.");
+      console.error("Error: An error occurred while adding the bank.", error.response?.data || error.message);
     } finally {
       setIsLoading(false);
     }
@@ -107,7 +103,7 @@ export default function HomeScreen() {
   const handleVerifyAmount = useCallback(async (amount: string) => {
     const numericAmount = parseFloat(amount);
     if (isNaN(numericAmount) || numericAmount <= 0) {
-      Alert.alert("Error", "Please enter a valid positive amount.");
+      console.error("Error: Please enter a valid positive amount.");
       return;
     }
 
@@ -125,7 +121,7 @@ export default function HomeScreen() {
       });
     } catch (error: any) {
       console.error('Error verifying amount:', error.response?.data || error.message);
-      Alert.alert("Error", error.response?.data?.error || "Could not verify amount.");
+      console.error("Error: Could not verify amount.", error.response?.data?.error || error.message);
     } finally {
       setIsLoading(false);
     }
@@ -146,7 +142,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <ThemedView style={styles.container}>
-        <ThemedText type="title">Connected Banks ({packageName})</ThemedText>
+        <ThemedText type="title">Connected Banks</ThemedText>
 
         {isLoading && <ActivityIndicator size="large" color="#0000ff" />}
 

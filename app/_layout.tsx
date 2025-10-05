@@ -6,7 +6,6 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
-import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
@@ -48,19 +47,6 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-
-  useEffect(() => {
-    // This is a workaround to initialize expo-keep-awake on app start.
-    const initKeepAwake = async () => {
-      try {
-        await activateKeepAwakeAsync('app-init');
-        await deactivateKeepAwake('app-init');
-      } catch (e) {
-        console.error('Failed to initialize keep-awake', e);
-      }
-    };
-    initKeepAwake();
-  }, []);
 
   return (
     <AuthProvider>
