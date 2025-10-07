@@ -19,6 +19,7 @@ export default function VerificationResultScreen() {
     requestedAmount: string;
     currency: string;
     accounts: string; // This will be a JSON string
+    requestIds: string; // This will also be a JSON string
   }>();
 
   // Parse the parameters
@@ -27,6 +28,7 @@ export default function VerificationResultScreen() {
   const requestedAmount = params.requestedAmount ? parseFloat(params.requestedAmount) : 0;
   const currency = params.currency || 'USD';
   const accounts: Account[] = params.accounts ? JSON.parse(params.accounts) : [];
+  const requestIds: string[] = params.requestIds ? JSON.parse(params.requestIds) : [];
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
@@ -48,6 +50,14 @@ export default function VerificationResultScreen() {
         <ThemedText style={styles.summaryText}>
           Requested amount of {formatCurrency(requestedAmount)} was compared against a total available balance of {formatCurrency(totalBalance)}.
         </ThemedText>
+        {requestIds.length > 0 && (
+          <View style={styles.requestIdsContainer}>
+            <ThemedText style={styles.requestIdsHeader}>Request IDs:</ThemedText>
+            {requestIds.map((id, index) => (
+              <ThemedText key={index} style={styles.requestIdText} selectable>{id}</ThemedText>
+            ))}
+          </View>
+        )}
       </View>
 
       <ThemedText style={styles.detailsHeader}>Account Details:</ThemedText>
@@ -119,5 +129,21 @@ const styles = StyleSheet.create({
   accountBalance: {
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  requestIdsContainer: {
+    marginTop: 15,
+    padding: 10,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 5,
+    width: '100%',
+    alignItems: 'center',
+  },
+  requestIdsHeader: {
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  requestIdText: {
+    fontSize: 12,
+    color: '#555',
   },
 });

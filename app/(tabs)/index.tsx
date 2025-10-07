@@ -3,9 +3,8 @@ import { StyleSheet, Button, View, FlatList, Image, ActivityIndicator } from 're
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import api from '@/lib/api';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { create, open, LinkSuccess, LinkExit, LinkIOSPresentationStyle, LinkLogLevel } from 'react-native-plaid-link-sdk';
-import { useRouter } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import InputModal from '@/components/ui/input-modal';
 
 import { useAuth } from '@/hooks/useAuth';
@@ -111,12 +110,14 @@ export default function HomeScreen() {
     setIsLoading(true);
     try {
       const response = await api.post('http://localhost:3000/api/plaid/generate-report', { amount: numericAmount });
-      const { accounts, ...rest } = response.data;
+      const { accounts, requestIds, ...rest } = response.data;
+      console.log("my requestIds", requestIds);
       router.push({
         pathname: '/verification-result',
         params: {
           ...rest,
           accounts: JSON.stringify(accounts),
+          requestIds: JSON.stringify(requestIds),
         },
       });
     } catch (error: any) {
@@ -140,9 +141,9 @@ export default function HomeScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+    <>
+      <Stack.Screen options={{ title: 'Connected Banks' }} />
       <ThemedView style={styles.container}>
-        <ThemedText type="title">Connected Banks</ThemedText>
 
         {isLoading && <ActivityIndicator size="large" color="#0000ff" />}
 
@@ -180,7 +181,7 @@ export default function HomeScreen() {
         inputLabel="Amount to Verify"
         submitButtonText="Verify"
       />
-    </SafeAreaView>
+    </>
   );
 }
 
