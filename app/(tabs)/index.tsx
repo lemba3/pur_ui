@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, Button, View, FlatList, Image, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, FlatList, Image, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import api from '@/lib/api';
@@ -8,6 +8,8 @@ import { useRouter } from 'expo-router';
 import InputModal from '@/components/ui/input-modal';
 
 import { useAuth } from '@/hooks/useAuth';
+import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 interface ConnectedBank {
   itemId: string;
@@ -19,20 +21,24 @@ interface ConnectedBank {
 
 export default function HomeScreen() {
   const [connectedBanks, setConnectedBanks] = useState<ConnectedBank[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingBanks, setIsFetchingBanks] = useState(true);
+  const [isAddingBank, setIsAddingBank] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [isModalVisible, setModalVisible] = useState(false);
   const router = useRouter();
+  const colorScheme = useColorScheme();
+  const currentColors = Colors[colorScheme ?? 'light'];
 
   const fetchConnectedBanks = useCallback(async () => {
-    setIsLoading(true);
+    setIsFetchingBanks(true);
     try {
-      const response = await api.get('http://localhost:3000/api/plaid/items');
+      const response = await api.get('/plaid/items');
       setConnectedBanks(response.data);
     } catch (error: any) {
       console.error('Error fetching connected banks:', error.response?.data || error.message);
       console.error("Error: Could not fetch connected banks.", error.response?.data || error.message);
     } finally {
-      setIsLoading(false);
+      setIsFetchingBanks(false);
     }
   }, []);
 
@@ -46,17 +52,17 @@ export default function HomeScreen() {
 
   const handleAddBank = useCallback(async () => {
     console.log('handleAddBank called');
-    setIsLoading(true);
+    setIsAddingBank(true);
     try {
       console.log('Fetching link token...');
-      const response = await api.post('http://localhost:3000/api/plaid/create-link-token');
+      const response = await api.post('/plaid/create-link-token');
       const linkToken = response.data.link_token;
       console.log('Link token received:', linkToken);
 
       if (!linkToken) {
         console.error('Link token is null or undefined');
         console.error("Error: Failed to get link token.");
-        setIsLoading(false);
+        setIsAddingBank(false);
         return;
       }
 
@@ -71,7 +77,7 @@ export default function HomeScreen() {
           setTimeout(async () => {
             console.log('Plaid link success:', success);
             try {
-              await api.post('http://localhost:3000/api/plaid/exchange-public-token', { public_token: success.publicToken });
+              await api.post('/plaid/exchange-public-token', { public_token: success.publicToken });
               console.log("Success: Bank account linked successfully!"); fetchConnectedBanks(); // Refresh the list of banks
             } catch (error: any) {
               console.error('Error exchanging public token:', error.response?.data || error.message);
@@ -96,7 +102,7 @@ export default function HomeScreen() {
       console.error('Error in handleAddBank:', error.response?.data || error.message);
       console.error("Error: An error occurred while adding the bank.", error.response?.data || error.message);
     } finally {
-      setIsLoading(false);
+      setIsAddingBank(false);
     }
   }, [fetchConnectedBanks]);
 
@@ -112,26 +118,27 @@ export default function HomeScreen() {
     }
 
     setModalVisible(false);
-    setIsLoading(true);
+    setIsVerifying(true);
     try {
-      const response = await api.post('http://localhost:3000/api/plaid/generate-report', { amount: numericAmount });
+      const response = await api.post('/plaid/generate-report', { amount: numericAmount });
       const { accounts, requestIds, ...rest } = response.data;
-      console.log("my requestIds", requestIds);
+
+      const bankNames = [...new Set(connectedBanks.map(b => b.institution.name))];
+
       router.push({
         pathname: '/verification-result',
         params: {
           ...rest,
-          accounts: JSON.stringify(accounts),
-          requestIds: JSON.stringify(requestIds),
+          bankNames: JSON.stringify(bankNames),
         },
       });
     } catch (error: any) {
       console.error('Error verifying amount:', error.response?.data || error.message);
       console.error("Error: Could not verify amount.", error.response?.data?.error || error.message);
     } finally {
-      setIsLoading(false);
+      setIsVerifying(false);
     }
-  }, [router]);
+  }, [router, connectedBanks]);
 
   const renderBankItem = ({ item }: { item: ConnectedBank }) => (
     <View style={styles.bankItemContainer}>
@@ -145,36 +152,58 @@ export default function HomeScreen() {
     </View>
   );
 
+  const isBusy = isAddingBank || isVerifying;
+
   return (
     <>
       <ThemedView style={styles.container}>
+        <View style={styles.bankListContainer}>
+          {isFetchingBanks && <ActivityIndicator size="large" color="#0000ff" />}
 
-        {isLoading && <ActivityIndicator size="large" color="#0000ff" />}
-
-        {!isLoading && (
-          <FlatList
-            data={connectedBanks}
-            renderItem={renderBankItem}
-            keyExtractor={(item) => item.itemId}
-            ListEmptyComponent={() => (
-              <View style={styles.emptyListContainer}>
-                <ThemedText>No banks connected yet.</ThemedText>
-              </View>
-            )}
-          />
-        )}
+          {!isFetchingBanks && (
+            <FlatList
+              data={connectedBanks}
+              renderItem={renderBankItem}
+              keyExtractor={(item) => item.itemId}
+              ListEmptyComponent={() => (
+                <View style={styles.emptyListContainer}>
+                  <ThemedText>No banks connected yet.</ThemedText>
+                </View>
+              )}
+            />
+          )}
+        </View>
 
         <View style={styles.buttonContainer}>
-          <Button
-            title="Add Bank"
+          <TouchableOpacity
+            style={[
+              styles.button,
+              { backgroundColor: currentColors.tint, opacity: isBusy ? 0.6 : 1 },
+            ]}
             onPress={handleAddBank}
-            disabled={isLoading}
-          />
-          <Button
-            title="Verify Balance"
+            disabled={isBusy}
+          >
+            {isAddingBank ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Add Bank</Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.button,
+              { backgroundColor: currentColors.tint, opacity: isBusy ? 0.6 : 1 },
+            ]}
             onPress={handleGenerateReport}
-            disabled={isLoading || connectedBanks.length === 0}
-          />
+            disabled={isBusy || connectedBanks.length === 0}
+          >
+            {isVerifying ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Verify Balance</Text>
+            )}
+          </TouchableOpacity>
         </View>
       </ThemedView>
       <InputModal
@@ -184,6 +213,7 @@ export default function HomeScreen() {
         title="Verify Account Balance"
         inputLabel="Amount to Verify"
         submitButtonText="Verify"
+        isLoading={isVerifying}
       />
     </>
   );
@@ -219,5 +249,27 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     gap: 8,
+    flexDirection: 'row',
+  },
+  bankListContainer: {
+    flex: 1,
+  },
+  button: {
+    flex: 1,
+    height: 50,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
   },
 });
