@@ -1,12 +1,10 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
 import { ThemedView } from '@/components/themed-view';
-import { Stack } from 'expo-router';
 
 export default function ReportScreen() {
   return (
     <>
-      <Stack.Screen options={{ title: 'Report' }} />
       <ThemedView style={styles.container}>
         {/* Screen is intentionally blank as per requirement */}
       </ThemedView>

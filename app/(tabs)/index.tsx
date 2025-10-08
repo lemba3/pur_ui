@@ -4,7 +4,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import api from '@/lib/api';
 import { create, open, LinkSuccess, LinkExit, LinkIOSPresentationStyle, LinkLogLevel } from 'react-native-plaid-link-sdk';
-import { Stack, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import InputModal from '@/components/ui/input-modal';
 
 import { useAuth } from '@/hooks/useAuth';
@@ -67,20 +67,25 @@ export default function HomeScreen() {
       console.log('Calling open()...');
       open({
         onSuccess: async (success: LinkSuccess) => {
-          console.log('Plaid link success:', success);
-          try {
-            await api.post('http://localhost:3000/api/plaid/exchange-public-token', { public_token: success.publicToken });
-            console.log("Success: Bank account linked successfully!"); fetchConnectedBanks(); // Refresh the list of banks
-          } catch (error: any) {
-            console.error('Error exchanging public token:', error.response?.data || error.message);
-            console.error("Error: Could not link bank account.", error.response?.data || error.message);
-          }
+          console.log("onSuccess of open function called")
+          setTimeout(async () => {
+            console.log('Plaid link success:', success);
+            try {
+              await api.post('http://localhost:3000/api/plaid/exchange-public-token', { public_token: success.publicToken });
+              console.log("Success: Bank account linked successfully!"); fetchConnectedBanks(); // Refresh the list of banks
+            } catch (error: any) {
+              console.error('Error exchanging public token:', error.response?.data || error.message);
+              console.error("Error: Could not link bank account.", error.response?.data || error.message);
+            }
+          }, 500);
         },
         onExit: (exit: LinkExit) => {
-          console.log('Plaid link exit:', exit);
-          if (exit.error) {
-            console.error("Plaid Link Exit Error:", JSON.stringify(exit.error));
-          }
+          setTimeout(() => {
+            console.log('Plaid link exit:', exit);
+            if (exit.error) {
+              console.error("Plaid Link Exit Error:", JSON.stringify(exit.error));
+            }
+          }, 500);
         },
         iOSPresentationStyle: LinkIOSPresentationStyle.MODAL,
         logLevel: LinkLogLevel.DEBUG, // log more for debugging
@@ -142,7 +147,6 @@ export default function HomeScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Connected Banks' }} />
       <ThemedView style={styles.container}>
 
         {isLoading && <ActivityIndicator size="large" color="#0000ff" />}

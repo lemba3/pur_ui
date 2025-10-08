@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import axios from 'axios';
+import axios, { isAxiosError } from 'axios';
 
 interface Session {
   user: {
@@ -16,22 +16,25 @@ interface Session {
 }
 
 const AuthContext = createContext<{
-  signIn: (email, password) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
   signOut: () => void;
-  signUp: (email, password, name) => Promise<void>;
+  signUp: (email: string, password: string, name: string) => Promise<void>;
   session?: Session | null;
   isLoading: boolean;
+  isAuthenticating: boolean;
 }>({
   signIn: () => Promise.resolve(),
   signOut: () => { },
   signUp: () => Promise.resolve(),
   session: null,
   isLoading: false,
+  isAuthenticating: false,
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -45,7 +48,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadSession();
   }, []);
 
-  const signIn = async (email, password) => {
+  const signIn = async (email: string, password: string) => {
+    setIsAuthenticating(true);
     try {
       const response = await axios.post('http://localhost:3000/api/auth/login', {
         email,
@@ -58,11 +62,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     } catch (e) {
       console.error("Sign in failed", e);
-      if (axios.isAxiosError(e) && e.response) {
+      if (isAxiosError(e) && e.response) {
         alert(`Sign in failed: ${e.response.data.error || 'An error occurred'}`);
       } else {
         alert("Sign in failed. Check console for details.");
       }
+    } finally {
+      setIsAuthenticating(false);
     }
   };
 
@@ -73,7 +79,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // For now, we just clear the local session
   };
 
-  const signUp = async (email, password, name) => {
+  const signUp = async (email: string, password: string, name: string) => {
+    setIsAuthenticating(true);
     try {
       // NOTE: Replace with your actual backend URL
       await axios.post('http://localhost:3000/api/auth/signup', {
@@ -85,11 +92,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       router.push('/login');
     } catch (e) {
       console.error("Sign up failed", e);
-      if (axios.isAxiosError(e) && e.response) {
+      if (isAxiosError(e) && e.response) {
         alert(`Sign up failed: ${e.response.data.error || 'An error occurred'}`);
       } else {
         alert("Sign up failed. Check console for details.");
       }
+    } finally {
+      setIsAuthenticating(false);
     }
   };
 
@@ -101,6 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signUp,
         session,
         isLoading,
+        isAuthenticating,
       }}>
       {children}
     </AuthContext.Provider>

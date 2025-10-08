@@ -2,7 +2,6 @@ import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/hooks/useAuth';
-import { Stack } from 'expo-router';
 
 export default function SettingsScreen() {
   const { signOut } = useAuth();
@@ -16,7 +15,6 @@ export default function SettingsScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Settings' }} />
       <ThemedView style={styles.container}>
         <View style={styles.section}>
           {myButtons.map((btn, index) => (
