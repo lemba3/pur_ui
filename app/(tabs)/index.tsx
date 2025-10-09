@@ -46,7 +46,11 @@ export default function HomeScreen() {
 
   useEffect(() => {
     if (!isAuthLoading && session) {
+      api.defaults.headers.common['Authorization'] = `Bearer ${session.token.accessToken}`;
       fetchConnectedBanks();
+    } else if (!isAuthLoading && !session) {
+      // Clear Authorization header if session is null (e.g., after signOut)
+      delete api.defaults.headers.common['Authorization'];
     }
   }, [fetchConnectedBanks, isAuthLoading, session]);
 

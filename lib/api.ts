@@ -9,18 +9,8 @@ const api = axios.create({
 // Add a request interceptor
 api.interceptors.request.use(
   async (config) => {
-    const sessionString = await SecureStore.getItemAsync('session');
-    if (sessionString) {
-      try {
-        const session = JSON.parse(sessionString);
-        const accessToken = session?.token?.accessToken;
-        if (accessToken) {
-          config.headers.Authorization = `Bearer ${accessToken}`;
-        }
-      } catch (e) {
-        console.error("Failed to parse session from secure store", e);
-      }
-    }
+    // The Authorization header should be set externally (e.g., from useAuth hook)
+    // If it's not set, it means the user is not authenticated or the token is not yet available.
     return config;
   },
   (error) => {
@@ -82,8 +72,12 @@ api.interceptors.response.use(
           return Promise.reject(error);
         }
 
-        // Call the refresh endpoint
-        const { data } = await api.post('/auth/refresh', { refreshToken });
+        // Call the refresh endpoint, sending the refreshToken in the Authorization header
+        const { data } = await api.post('/auth/refresh', {}, {
+          headers: {
+            'Authorization': `Bearer ${refreshToken}`
+          }
+        });
         const newAccessToken = data.accessToken;
 
         // Update the session in secure store
