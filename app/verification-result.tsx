@@ -10,7 +10,7 @@ import * as Sharing from 'expo-sharing';
 // Helper to generate the HTML report
 const generateReportHtml = (data: any) => {
   const {
-    sufficient, totalBalance, requestedAmount, currency, bankNames,
+    sufficient, requestedAmount, currency, bankNames,
     reportId, generatedAt, accountHolderName
   } = data;
 
@@ -56,7 +56,7 @@ const generateReportHtml = (data: any) => {
         <div class="card">
           <div class="header">
             <p class="header-title">Bank Balance Verification Report</p>
-            <p class="header-subtitle">Official verification document generated on ${new Date().toLocaleDateString()}</p>
+            <p class="header-subtitle">Official verification document generated on ${new Date().toLocaleDateString("en-US")}</p>
           </div>
           <div class="badge">
             ${sufficient ? '&#10003;' : '&#10007;'} ${sufficient ? 'VERIFIED' : 'INSUFFICIENT'}
@@ -105,7 +105,6 @@ const generateReportHtml = (data: any) => {
 export default function VerificationResultScreen() {
   const params = useLocalSearchParams<{
     sufficient: string;
-    totalBalance: string;
     requestedAmount: string;
     currency: string;
     bankNames?: string;
@@ -116,7 +115,6 @@ export default function VerificationResultScreen() {
   const { session } = useAuth();
 
   const sufficient = params.sufficient === 'true';
-  const totalBalance = params.totalBalance ? parseFloat(params.totalBalance) : 0;
   const requestedAmount = params.requestedAmount ? parseFloat(params.requestedAmount) : 0;
   const currency = params.currency || 'USD';
   const bankNames: string[] = params.bankNames ? JSON.parse(params.bankNames) : [];
@@ -132,7 +130,6 @@ export default function VerificationResultScreen() {
     try {
       const htmlContent = generateReportHtml({
         sufficient,
-        totalBalance,
         requestedAmount,
         currency,
         bankNames,
@@ -173,7 +170,7 @@ export default function VerificationResultScreen() {
           <View style={styles.header}>
             <ThemedText style={styles.headerTitle}>Bank Balance Verification Report</ThemedText>
             <ThemedText style={styles.headerSubtitle}>
-              Official verification document generated on {new Date().toLocaleDateString()}
+              Official verification document generated on {new Date().toLocaleDateString("en-US")}
             </ThemedText>
           </View>
 

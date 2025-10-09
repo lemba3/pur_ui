@@ -1,8 +1,9 @@
+import { myConstants } from '@/constants/my-constants';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 const api = axios.create({
-  baseURL: 'http://localhost:3000/api',
+  baseURL: myConstants.BASE_API_URL,
   withCredentials: true, // This is important to send cookies
 });
 
@@ -44,13 +45,13 @@ api.interceptors.response.use(
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
-        .then(token => {
-          originalRequest.headers['Authorization'] = 'Bearer ' + token;
-          return axios(originalRequest);
-        })
-        .catch(err => {
-          return Promise.reject(err);
-        });
+          .then(token => {
+            originalRequest.headers['Authorization'] = 'Bearer ' + token;
+            return axios(originalRequest);
+          })
+          .catch(err => {
+            return Promise.reject(err);
+          });
       }
 
       originalRequest._retry = true;
@@ -87,10 +88,10 @@ api.interceptors.response.use(
         // Update the default and original request headers
         api.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
         originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
-        
+
         // Retry all requests in the queue with the new token
         processQueue(null, newAccessToken);
-        
+
         // Retry the original request
         return api(originalRequest);
       } catch (refreshError) {

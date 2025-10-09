@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import axios, { isAxiosError } from 'axios';
+import { myConstants } from '@/constants/my-constants';
 
 interface Session {
   user: {
@@ -51,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     setIsAuthenticating(true);
     try {
-      const response = await axios.post('http://localhost:3000/api/auth/login', {
+      const response = await axios.post(myConstants.BASE_API_URL + '/auth/login', {
         email,
         password,
       });
@@ -83,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsAuthenticating(true);
     try {
       // NOTE: Replace with your actual backend URL
-      await axios.post('http://localhost:3000/api/auth/signup', {
+      await axios.post(myConstants.BASE_API_URL + '/auth/signup', {
         email,
         password,
         name,

@@ -10,6 +10,7 @@ import InputModal from '@/components/ui/input-modal';
 import { useAuth } from '@/hooks/useAuth';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { myConstants } from '@/constants/my-constants';
 
 interface ConnectedBank {
   itemId: string;
@@ -33,6 +34,7 @@ export default function HomeScreen() {
     setIsFetchingBanks(true);
     try {
       const response = await api.get('/plaid/items');
+      // console.log('--- बैंक डेटा ---:\n', JSON.stringify(response.data, null, 2));
       setConnectedBanks(response.data);
     } catch (error: any) {
       console.error('Error fetching connected banks:', error.response?.data || error.message);
@@ -127,13 +129,13 @@ export default function HomeScreen() {
       const response = await api.post('/plaid/generate-report', { amount: numericAmount });
       const { accounts, requestIds, ...rest } = response.data;
 
-      const bankNames = [...new Set(connectedBanks.map(b => b.institution.name))];
+      // const bankNames = [...new Set(connectedBanks.map(b => b.institution.name))];
 
       router.push({
         pathname: '/verification-result',
         params: {
           ...rest,
-          bankNames: JSON.stringify(bankNames),
+          bankNames: JSON.stringify(rest.bankNames),
         },
       });
     } catch (error: any) {
@@ -142,13 +144,18 @@ export default function HomeScreen() {
     } finally {
       setIsVerifying(false);
     }
-  }, [router, connectedBanks]);
+  }, [router]);
 
   const renderBankItem = ({ item }: { item: ConnectedBank }) => (
     <View style={styles.bankItemContainer}>
-      {item.institution.logo && (
+      {item.institution.logo ? (
         <Image
           source={{ uri: `data:image/png;base64,${item.institution.logo}` }}
+          style={styles.bankLogo}
+        />
+      ) : (
+        <Image
+          source={{ uri: `data:image/png;base64,${myConstants.BANKLOGO.default}` }}
           style={styles.bankLogo}
         />
       )}
