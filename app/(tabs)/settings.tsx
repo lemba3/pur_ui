@@ -8,8 +8,7 @@ export default function SettingsScreen() {
 
   const myButtons = [
     { title: 'Profile', onPress: () => { } },
-    { title: 'Notifications', onPress: () => { } },
-    { title: 'Privacy', onPress: () => { } },
+    { title: 'Privacy Policy', onPress: () => { } },
     { title: 'About', onPress: () => { } },
   ];
 

@@ -4,147 +4,92 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import api from '@/lib/api';
 import { create, open, LinkSuccess, LinkExit, LinkIOSPresentationStyle, LinkLogLevel } from 'react-native-plaid-link-sdk';
-import { useRouter } from 'expo-router';
 import InputModal from '@/components/ui/input-modal';
 
 import { useAuth } from '@/hooks/useAuth';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { myConstants } from '@/constants/my-constants';
-
-interface ConnectedBank {
-  itemId: string;
-  institution: {
-    name: string;
-    logo?: string;
-  };
-}
+import { useConnectedBanks, useInvalidateBanks, ConnectedBank } from '@/hooks/bank';
+import { useGenerateReport } from '@/hooks/report';
 
 export default function HomeScreen() {
-  const [connectedBanks, setConnectedBanks] = useState<ConnectedBank[]>([]);
-  const [isFetchingBanks, setIsFetchingBanks] = useState(true);
+  const { data: connectedBanks, isLoading: isFetchingBanks } = useConnectedBanks();
+  const invalidateBanks = useInvalidateBanks();
+  const { mutate: generateReport, isPending: isVerifying } = useGenerateReport();
+
   const [isAddingBank, setIsAddingBank] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
   const [isModalVisible, setModalVisible] = useState(false);
-  const router = useRouter();
   const colorScheme = useColorScheme();
   const currentColors = Colors[colorScheme ?? 'light'];
-
-  const fetchConnectedBanks = useCallback(async () => {
-    setIsFetchingBanks(true);
-    try {
-      const response = await api.get('/plaid/items');
-      // console.log('--- बैंक डेटा ---:\n', JSON.stringify(response.data, null, 2));
-      setConnectedBanks(response.data);
-    } catch (error: any) {
-      console.error('Error fetching connected banks:', error.response?.data || error.message);
-      console.error("Error: Could not fetch connected banks.", error.response?.data || error.message);
-    } finally {
-      setIsFetchingBanks(false);
-    }
-  }, []);
 
   const { session, isLoading: isAuthLoading } = useAuth();
 
   useEffect(() => {
     if (!isAuthLoading && session) {
       api.defaults.headers.common['Authorization'] = `Bearer ${session.token.accessToken}`;
-      fetchConnectedBanks();
     } else if (!isAuthLoading && !session) {
-      // Clear Authorization header if session is null (e.g., after signOut)
       delete api.defaults.headers.common['Authorization'];
     }
-  }, [fetchConnectedBanks, isAuthLoading, session]);
+  }, [isAuthLoading, session]);
 
   const handleAddBank = useCallback(async () => {
-    console.log('handleAddBank called');
     setIsAddingBank(true);
     try {
-      console.log('Fetching link token...');
       const response = await api.post('/plaid/create-link-token');
       const linkToken = response.data.link_token;
-      console.log('Link token received:', linkToken);
 
       if (!linkToken) {
-        console.error('Link token is null or undefined');
         console.error("Error: Failed to get link token.");
         setIsAddingBank(false);
         return;
       }
 
-      console.log('Calling create() with link token...');
       create({ token: linkToken, noLoadingState: false });
-      console.log('create() called.');
 
-      console.log('Calling open()...');
       open({
         onSuccess: async (success: LinkSuccess) => {
-          console.log("onSuccess of open function called")
           setTimeout(async () => {
-            console.log('Plaid link success:', success);
             try {
               await api.post('/plaid/exchange-public-token', { public_token: success.publicToken });
-              console.log("Success: Bank account linked successfully!"); fetchConnectedBanks(); // Refresh the list of banks
+              console.log("Success: Bank account linked successfully!");
+              invalidateBanks(); // Invalidate and refetch
             } catch (error: any) {
-              console.error('Error exchanging public token:', error.response?.data || error.message);
               console.error("Error: Could not link bank account.", error.response?.data || error.message);
             }
           }, 500);
         },
         onExit: (exit: LinkExit) => {
           setTimeout(() => {
-            console.log('Plaid link exit:', exit);
             if (exit.error) {
               console.error("Plaid Link Exit Error:", JSON.stringify(exit.error));
             }
           }, 500);
         },
         iOSPresentationStyle: LinkIOSPresentationStyle.MODAL,
-        logLevel: LinkLogLevel.DEBUG, // log more for debugging
+        logLevel: LinkLogLevel.DEBUG,
       });
-      console.log('open() called.');
 
     } catch (error: any) {
-      console.error('Error in handleAddBank:', error.response?.data || error.message);
       console.error("Error: An error occurred while adding the bank.", error.response?.data || error.message);
     } finally {
       setIsAddingBank(false);
     }
-  }, [fetchConnectedBanks]);
+  }, [invalidateBanks]);
 
   const handleGenerateReport = useCallback(() => {
     setModalVisible(true);
   }, []);
 
-  const handleVerifyAmount = useCallback(async (amount: string) => {
+  const handleVerifyAmount = useCallback((amount: string) => {
     const numericAmount = parseFloat(amount);
     if (isNaN(numericAmount) || numericAmount <= 0) {
       console.error("Error: Please enter a valid positive amount.");
       return;
     }
-
     setModalVisible(false);
-    setIsVerifying(true);
-    try {
-      const response = await api.post('/plaid/generate-report', { amount: numericAmount });
-      const { accounts, requestIds, ...rest } = response.data;
-
-      // const bankNames = [...new Set(connectedBanks.map(b => b.institution.name))];
-
-      router.push({
-        pathname: '/verification-result',
-        params: {
-          ...rest,
-          bankNames: JSON.stringify(rest.bankNames),
-        },
-      });
-    } catch (error: any) {
-      console.error('Error verifying amount:', error.response?.data || error.message);
-      console.error("Error: Could not verify amount.", error.response?.data?.error || error.message);
-    } finally {
-      setIsVerifying(false);
-    }
-  }, [router]);
+    generateReport(numericAmount);
+  }, [generateReport]);
 
   const renderBankItem = ({ item }: { item: ConnectedBank }) => (
     <View style={styles.bankItemContainer}>
@@ -169,7 +114,7 @@ export default function HomeScreen() {
     <>
       <ThemedView style={styles.container}>
         <View style={styles.bankListContainer}>
-          {isFetchingBanks && <ActivityIndicator size="large" color="#0000ff" />}
+          {isFetchingBanks && <ActivityIndicator size="large" color="#0000ff" />} 
 
           {!isFetchingBanks && (
             <FlatList
@@ -207,7 +152,7 @@ export default function HomeScreen() {
               { backgroundColor: currentColors.tint, opacity: isBusy ? 0.6 : 1 },
             ]}
             onPress={handleGenerateReport}
-            disabled={isBusy || connectedBanks.length === 0}
+            disabled={isBusy || !connectedBanks || connectedBanks.length === 0}
           >
             {isVerifying ? (
               <ActivityIndicator size="small" color="#fff" />

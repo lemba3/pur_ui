@@ -1,8 +1,9 @@
 import React from 'react';
-import { StyleSheet, FlatList, ActivityIndicator } from 'react-native';
+import { StyleSheet, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import { useReports } from '@/hooks/report';
+import { useRouter } from 'expo-router';
 
 interface Report {
   id: string;
@@ -21,6 +22,7 @@ export default function ReportScreen() {
     isFetchingNextPage,
     status,
   } = useReports();
+  const router = useRouter();
 
   const loadMore = () => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -28,13 +30,22 @@ export default function ReportScreen() {
     }
   };
 
+  const handleViewReport = (reportId: string) => {
+    router.push({
+      pathname: '/verification-result',
+      params: { reportId: reportId },
+    });
+  };
+
   const renderItem = ({ item }: { item: Report }) => (
-    <ThemedView style={styles.reportItem}>
-      <ThemedText><ThemedText type="defaultSemiBold">Amount:</ThemedText> ${item.requestedAmount.toFixed(2)}</ThemedText>
-      <ThemedText><ThemedText type="defaultSemiBold">Sufficient:</ThemedText> {item.sufficient ? 'Yes' : 'No'}</ThemedText>
-      <ThemedText><ThemedText type="defaultSemiBold">Banks:</ThemedText> {item.bankNames.join(', ')}</ThemedText>
-      <ThemedText><ThemedText type="defaultSemiBold">Date:</ThemedText> {new Date(item.createdAt).toLocaleDateString()}</ThemedText>
-    </ThemedView>
+    <TouchableOpacity onPress={() => handleViewReport(item.id)} style={styles.reportItemContainer}>
+      <ThemedView style={styles.reportItem}>
+        <ThemedText><ThemedText type="defaultSemiBold">Amount:</ThemedText> ${item.requestedAmount.toFixed(2)}</ThemedText>
+        <ThemedText><ThemedText type="defaultSemiBold">Sufficient:</ThemedText> {item.sufficient ? 'Yes' : 'No'}</ThemedText>
+        <ThemedText><ThemedText type="defaultSemiBold">Banks:</ThemedText> {item.bankNames.join(', ')}</ThemedText>
+        <ThemedText><ThemedText type="defaultSemiBold">Date:</ThemedText> {new Date(item.createdAt).toLocaleDateString()}</ThemedText>
+      </ThemedView>
+    </TouchableOpacity>
   );
 
   if (status === 'pending') {
@@ -85,10 +96,12 @@ const styles = StyleSheet.create({
   container_list: {
     flex: 1,
   },
-  reportItem: {
-    padding: 16,
+  reportItemContainer: {
     marginHorizontal: 16,
     marginBottom: 12,
+  },
+  reportItem: {
+    padding: 16,
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 8,

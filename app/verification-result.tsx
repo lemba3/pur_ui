@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, Stack } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
+import { useGetReport } from '@/hooks/report'; // Import the renamed hook
 
 // Helper to generate the HTML report
 const generateReportHtml = (data: any) => {
@@ -33,11 +34,11 @@ const generateReportHtml = (data: any) => {
       <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: ${pageBackgroundColor}; }
         .page { padding: 20px; }
-        .card { background-color: ${cardBackgroundColor}; border-radius: 12px; box-shadow: 0 3px 8px rgba(0,0,0,0.07); overflow: hidden; text-align: center; }
+        .card { background-color: ${cardBackgroundColor}; border-radius: 12px; box-shadow: 0 3px 8px rgba(0,0,0,0.07); overflow: hidden; text-align: center; } 
         .header { background-color: ${headerBackgroundColor}; padding: 24px 16px; text-align: center; color: #fff; }
         .header-title { font-size: 22px; font-weight: bold; margin: 0; }
         .header-subtitle { color: #e0e0e0; margin-top: 6px; font-size: 13px; }
-        .badge { display:inline-block; margin:20px auto; border-radius:20px; padding:8px 20px; background-color:${sufficient ? successColor : errorColor}; color:#fff; font-weight:600; text-align:center; white-space:nowrap; }
+        .badge { display:inline-block; margin:20px auto; border-radius:20px; padding:8px 20px; background-color:${sufficient ? successColor : errorColor}; color:#fff; font-weight:600; text-align:center; white-space:nowrap; } 
         .amount-highlight { background-color: #f8f9fa; border-left: 4px solid ${sufficient ? successColor : errorColor}; padding: 18px; border-radius: 8px; text-align: center; margin: 20px 16px; }
         .amount-label { font-size: 14px; font-weight: 600; color: ${sufficient ? successColor : errorColor}; }
         .amount-text { font-size: 26px; font-weight: bold; color: #111; margin: 6px 0; }
@@ -104,22 +105,43 @@ const generateReportHtml = (data: any) => {
 
 export default function VerificationResultScreen() {
   const params = useLocalSearchParams<{
-    sufficient: string;
-    requestedAmount: string;
-    currency: string;
-    bankNames?: string;
     reportId?: string;
+    sufficient?: string; // boolean as string
+    requestedAmount?: string;
+    bankNames?: string; // comma-separated string
+    userName?: string;
     generatedAt?: string;
   }>();
 
   const { session } = useAuth();
 
-  const sufficient = params.sufficient === 'true';
-  const requestedAmount = params.requestedAmount ? parseFloat(params.requestedAmount) : 0;
-  const currency = params.currency || 'USD';
-  const bankNames: string[] = params.bankNames ? JSON.parse(params.bankNames) : [];
-  const reportId = params.reportId;
-  const generatedAt = params.generatedAt;
+  // Parse values from params if present
+  const hasAllDataInParams = !!(params.sufficient && params.requestedAmount && params.bankNames && params.generatedAt);
+
+  const parsedData = hasAllDataInParams
+    ? {
+      sufficient: params.sufficient === 'true',
+      requestedAmount: Number(params.requestedAmount),
+      bankNames: params.bankNames!.split(','),
+      userName: params.userName || session?.user?.name, // Use session user name if not in params
+      generatedAt: params.generatedAt,
+      reportId: params.reportId, // reportId might be present even if other data is
+    }
+    : undefined;
+
+  const { data: fetchedReportData, isLoading, isError, error } = useGetReport(
+    parsedData ? undefined : params.reportId
+  );
+
+  const reportData = parsedData || fetchedReportData;
+
+  const sufficient = reportData?.sufficient ?? false;
+  const requestedAmount = reportData?.requestedAmount ?? 0;
+  const bankNames = reportData?.bankNames ?? [];
+  const userName = reportData?.userName ?? session?.user?.name ?? ''; // Fallback to session user name
+  const generatedAt = reportData?.generatedAt;
+  const reportId = reportData?.reportId;
+  const currency = 'USD';
 
   const formatCurrency = (amount: number) => {
     if (isNaN(amount)) return '-';
@@ -127,15 +149,19 @@ export default function VerificationResultScreen() {
   };
 
   const handleDownloadReport = async () => {
+    if (!reportData) {
+      Alert.alert('Error', 'Report data not available for download.');
+      return;
+    }
     try {
       const htmlContent = generateReportHtml({
-        sufficient,
-        requestedAmount,
+        sufficient: reportData.sufficient,
+        requestedAmount: reportData.requestedAmount,
         currency,
-        bankNames,
-        reportId,
-        generatedAt,
-        accountHolderName: session?.user?.name,
+        bankNames: reportData.bankNames,
+        reportId: reportData.reportId,
+        generatedAt: reportData.generatedAt,
+        accountHolderName: userName,
       });
 
       const fileUri = (FileSystem.documentDirectory ?? '') + 'verification-report.html';
@@ -149,7 +175,7 @@ export default function VerificationResultScreen() {
         return;
       }
 
-      await Sharing.shareAsync(fileUri, {
+      await Sharing.shareAsync(fileUri, { 
         mimeType: 'text/html',
         dialogTitle: 'Download Verification Report',
       });
@@ -158,6 +184,30 @@ export default function VerificationResultScreen() {
       Alert.alert('Error', 'Failed to generate report. Please try again.');
     }
   };
+
+  if (isLoading && !parsedData) {
+    return (
+      <View style={styles.pageContainer_center}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  if (isError && !parsedData) {
+    return (
+      <View style={styles.pageContainer_center}>
+        <ThemedText>Error loading report: {error?.message}</ThemedText>
+      </View>
+    );
+  }
+
+  if (!reportData) {
+    return (
+      <View style={styles.pageContainer_center}>
+        <ThemedText>Report not found.</ThemedText>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.pageContainer}>
@@ -223,7 +273,7 @@ export default function VerificationResultScreen() {
             <View style={styles.accountBox}>
               <View style={styles.accountRow}>
                 <ThemedText style={styles.infoLabel}>Account Holder</ThemedText>
-                <ThemedText style={styles.infoValue}>{session?.user?.name || '-'}</ThemedText>
+                <ThemedText style={styles.infoValue}>{userName}</ThemedText>
               </View>
               <View style={[styles.accountRow, { borderBottomWidth: 0 }]}>
                 <ThemedText style={styles.infoLabel}>Banks</ThemedText>
@@ -291,9 +341,14 @@ const styles = StyleSheet.create({
   pageContainer: {
     flex: 1,
   },
+  pageContainer_center: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   page: {
     flex: 1,
-    backgroundColor: '#eaeef3', // subtle gray background for "PDF paper" look
+    backgroundColor: '#eaeef3',
     paddingVertical: 20,
     paddingHorizontal: 12,
   },
@@ -315,7 +370,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#fff' },
   headerSubtitle: { color: '#e0e0e0', marginTop: 6, fontSize: 13 },
-  divider: {
+  divider: { 
     height: 1,
     backgroundColor: '#e5e7eb',
   },
@@ -348,7 +403,7 @@ const styles = StyleSheet.create({
     color: '#1E3A8A',
     marginHorizontal: 16,
     marginBottom: 8,
-    marginTop: 10, // Add some space above sections
+    marginTop: 10,
   },
   emptyText: { textAlign: 'center', color: '#777', marginVertical: 12 },
   accountBox: {
@@ -368,7 +423,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#eee',
   },
   infoLabel: { color: '#1E3A8A', fontWeight: '600', fontSize: 13 },
-  infoValue: { color: '#333', fontSize: 14, flex: 1, textAlign: 'right' }, // Make value text align right
+  infoValue: { color: '#333', fontSize: 14, flex: 1, textAlign: 'right' },
   noteBox: {
     flexDirection: 'row',
     alignItems: 'flex-start',
