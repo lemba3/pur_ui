@@ -1,7 +1,8 @@
-import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import { ThemedText } from '@/components/themed-text';
+import { StyleSheet, View } from 'react-native';
 import { ThemedView } from '@/components/themed-view';
 import { useAuth } from '@/hooks/useAuth';
+import Button from '@/components/ui/button';
+import { Colors } from '@/constants/theme';
 
 export default function SettingsScreen() {
   const { signOut } = useAuth();
@@ -17,16 +18,23 @@ export default function SettingsScreen() {
       <ThemedView style={styles.container}>
         <View style={styles.section}>
           {myButtons.map((btn, index) => (
-            <TouchableOpacity key={index} style={styles.button} onPress={btn.onPress}>
-              <ThemedText style={styles.buttonText}>{btn.title}</ThemedText>
-            </TouchableOpacity>
+            <Button
+              key={index}
+              title={btn.title}
+              onPress={btn.onPress}
+              color="#f2f2f2"
+              textStyle={{ color: Colors.light.text, fontWeight: '500' }}
+            />
           ))}
         </View>
 
         <View style={styles.signOutSection}>
-          <TouchableOpacity style={[styles.button, styles.signOutButton]} onPress={signOut}>
-            <ThemedText style={[styles.buttonText, styles.signOutText]}>Sign Out</ThemedText>
-          </TouchableOpacity>
+          <Button
+            title="Sign Out"
+            onPress={signOut}
+            color="#dc3545"
+            textStyle={{ color: '#fff', fontWeight: 'bold' }}
+          />
         </View>
       </ThemedView>
     </>
@@ -43,27 +51,7 @@ const styles = StyleSheet.create({
   section: {
     marginTop: 20,
   },
-  button: {
-    backgroundColor: '#f2f2f2',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
   signOutSection: {
     marginTop: 'auto',
-    // marginBottom: 40,
-  },
-  signOutButton: {
-    backgroundColor: '#dc3545',
-  },
-  signOutText: {
-    color: '#fff',
-    textAlign: 'center',
-    fontWeight: 'bold',
   },
 });

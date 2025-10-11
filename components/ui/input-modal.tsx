@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Modal, View, Text, TextInput, Button, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { Modal, View, TextInput, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
+import Button from './button';
 
 interface InputModalProps {
   visible: boolean;
@@ -56,8 +57,8 @@ export default function InputModal({
           />
           {isLoading && <ActivityIndicator size="large" color="#0000ff" style={styles.activityIndicator} />}
           <View style={styles.buttonContainer}>
-            <Button title="Cancel" onPress={onClose} color="#888" disabled={isLoading} />
-            <Button title={submitButtonText} onPress={handleSubmit} disabled={isLoading} />
+            <Button title="Cancel" onPress={onClose} color="#888" disabled={isLoading} style={{ flex: 1 }} />
+            <Button title={submitButtonText} onPress={handleSubmit} disabled={isLoading} style={{ flex: 1 }} />
           </View>
         </ThemedView>
       </KeyboardAvoidingView>
@@ -109,6 +110,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     width: '100%',
+    gap: 10,
   },
   activityIndicator: {
     marginBottom: 15,

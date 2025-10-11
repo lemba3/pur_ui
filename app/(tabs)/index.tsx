@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, Text, View, FlatList, Image, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, FlatList, Image, ActivityIndicator } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import api from '@/lib/api';
 import { create, open, LinkSuccess, LinkExit, LinkIOSPresentationStyle, LinkLogLevel } from 'react-native-plaid-link-sdk';
 import InputModal from '@/components/ui/input-modal';
+import Button from '@/components/ui/button';
 
 import { useAuth } from '@/hooks/useAuth';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { myConstants } from '@/constants/my-constants';
 import { useConnectedBanks, useInvalidateBanks, ConnectedBank } from '@/hooks/bank';
 import { useGenerateReport } from '@/hooks/report';
@@ -20,8 +19,6 @@ export default function HomeScreen() {
 
   const [isAddingBank, setIsAddingBank] = useState(false);
   const [isModalVisible, setModalVisible] = useState(false);
-  const colorScheme = useColorScheme();
-  const currentColors = Colors[colorScheme ?? 'light'];
 
   const { session, isLoading: isAuthLoading } = useAuth();
 
@@ -114,7 +111,7 @@ export default function HomeScreen() {
     <>
       <ThemedView style={styles.container}>
         <View style={styles.bankListContainer}>
-          {isFetchingBanks && <ActivityIndicator size="large" color="#0000ff" />} 
+          {isFetchingBanks && <ActivityIndicator size="large" color="#0000ff" />}
 
           {!isFetchingBanks && (
             <FlatList
@@ -131,35 +128,20 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[
-              styles.button,
-              { backgroundColor: currentColors.tint, opacity: isBusy ? 0.6 : 1 },
-            ]}
+          <Button
             onPress={handleAddBank}
+            title="Add Bank"
+            isLoading={isAddingBank}
             disabled={isBusy}
-          >
-            {isAddingBank ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Add Bank</Text>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.button,
-              { backgroundColor: currentColors.tint, opacity: isBusy ? 0.6 : 1 },
-            ]}
+            style={{ flex: 1 }}
+          />
+          <Button
             onPress={handleGenerateReport}
+            title="Verify Balance"
+            isLoading={isVerifying}
             disabled={isBusy || !connectedBanks || connectedBanks.length === 0}
-          >
-            {isVerifying ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Verify Balance</Text>
-            )}
-          </TouchableOpacity>
+            style={{ flex: 1 }}
+          />
         </View>
       </ThemedView>
       <InputModal
@@ -209,23 +191,5 @@ const styles = StyleSheet.create({
   },
   bankListContainer: {
     flex: 1,
-  },
-  button: {
-    flex: 1,
-    height: 50,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
   },
 });

@@ -1,9 +1,10 @@
 import { useAuth } from '@/hooks/useAuth';
 import React, { useState } from 'react';
-import { View, TextInput, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, TextInput, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import Button from '@/components/ui/button';
 
 export default function SignUp() {
   const [email, setEmail] = useState('');
@@ -19,7 +20,7 @@ export default function SignUp() {
       <Text style={[styles.title, { color: currentColors.text }]}>Sign Up</Text>
 
       <TextInput
-        style={[styles.input, { borderColor: currentColors.icon, color: currentColors.text }]}
+        style={[styles.input, { borderColor: currentColors.icon, color: currentColors.text, backgroundColor: currentColors.background }]}
         placeholder="Name"
         placeholderTextColor={currentColors.icon}
         value={name}
@@ -28,7 +29,7 @@ export default function SignUp() {
       />
 
       <TextInput
-        style={[styles.input, { borderColor: currentColors.icon, color: currentColors.text }]}
+        style={[styles.input, { borderColor: currentColors.icon, color: currentColors.text, backgroundColor: currentColors.background }]}
         placeholder="Email"
         placeholderTextColor={currentColors.icon}
         value={email}
@@ -38,7 +39,7 @@ export default function SignUp() {
       />
 
       <TextInput
-        style={[styles.input, { borderColor: currentColors.icon, color: currentColors.text }]}
+        style={[styles.input, { borderColor: currentColors.icon, color: currentColors.text, backgroundColor: currentColors.background }]}
         placeholder="Password"
         placeholderTextColor={currentColors.icon}
         value={password}
@@ -46,17 +47,12 @@ export default function SignUp() {
         secureTextEntry
       />
 
-      <TouchableOpacity
-        style={[styles.button, { backgroundColor: currentColors.tint }]}
+      <Button
+        title="Sign Up"
         onPress={() => signUp(email, password, name)}
-        disabled={isAuthenticating}
-      >
-        {isAuthenticating ? (
-          <ActivityIndicator size="small" color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Sign Up</Text>
-        )}
-      </TouchableOpacity>
+        isLoading={isAuthenticating}
+        textStyle={{ fontSize: 18, fontWeight: 'bold' }}
+      />
 
       <TouchableOpacity
         style={styles.backButton}
@@ -87,20 +83,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     marginBottom: 16,
     fontSize: 16,
-  },
-  button: {
-    height: 50,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 18,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2, // Android shadow
   },
   backButton: {
+    marginTop: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
