@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import axios, { isAxiosError } from 'axios';
 import { myConstants } from '@/constants/my-constants';
+import api, { setOnTokenRefresh } from '@/lib/api'; // Import api and setOnTokenRefresh
 
 interface Session {
   user: {
@@ -23,7 +24,7 @@ const AuthContext = createContext<{
   session?: Session | null;
   isLoading: boolean;
   isAuthenticating: boolean;
-}>({
+}>({ 
   signIn: () => Promise.resolve(),
   signOut: () => { },
   signUp: () => Promise.resolve(),
@@ -39,10 +40,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
+    // Set up the token refresh listener
+    setOnTokenRefresh((newSession) => {
+      setSession(newSession);
+    });
+
     const loadSession = async () => {
       const storedSession = await SecureStore.getItemAsync('session');
       if (storedSession) {
-        setSession(JSON.parse(storedSession));
+        const sessionData: Session = JSON.parse(storedSession);
+        setSession(sessionData);
+        // Set the default header for the api instance
+        if (sessionData?.token?.accessToken) {
+          api.defaults.headers.common['Authorization'] = `Bearer ${sessionData.token.accessToken}`;
+        }
       }
       setIsLoading(false);
     };
@@ -57,9 +68,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         password,
       });
 
-      const sessionValue = response.data;
+      const sessionValue: Session = response.data;
       await SecureStore.setItemAsync('session', JSON.stringify(sessionValue));
       setSession(sessionValue);
+      // Set the default header for the api instance
+      if (sessionValue?.token?.accessToken) {
+        api.defaults.headers.common['Authorization'] = `Bearer ${sessionValue.token.accessToken}`;
+      }
 
     } catch (e) {
       console.error("Sign in failed", e);
@@ -76,8 +91,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     await SecureStore.deleteItemAsync('session');
     setSession(null);
-    // You might want to call a backend endpoint to invalidate the token here
-    // For now, we just clear the local session
+    // Clear the default header
+    delete api.defaults.headers.common['Authorization'];
   };
 
   const signUp = async (email: string, password: string, name: string) => {

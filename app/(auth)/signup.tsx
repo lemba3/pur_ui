@@ -1,6 +1,6 @@
 import { useAuth } from '@/hooks/useAuth';
 import React, { useState } from 'react';
-import { View, TextInput, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TextInput, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -9,11 +9,24 @@ import Button from '@/components/ui/button';
 export default function SignUp() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const { signUp, isAuthenticating } = useAuth();
   const router = useRouter();
   const colorScheme = useColorScheme();
   const currentColors = Colors[colorScheme ?? 'light'];
+
+  const handleSignUp = () => {
+    if (password !== confirmPassword) {
+      Alert.alert("Passwords don't match", "Please make sure your passwords match.");
+      return;
+    }
+    if (!email || !password || !name) {
+      Alert.alert("Missing fields", "Please fill all the fields.");
+      return;
+    }
+    signUp(email, password, name);
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: currentColors.background }]}>
@@ -47,9 +60,18 @@ export default function SignUp() {
         secureTextEntry
       />
 
+      <TextInput
+        style={[styles.input, { borderColor: currentColors.icon, color: currentColors.text, backgroundColor: currentColors.background }]}
+        placeholder="Confirm Password"
+        placeholderTextColor={currentColors.icon}
+        value={confirmPassword}
+        onChangeText={setConfirmPassword}
+        secureTextEntry
+      />
+
       <Button
         title="Sign Up"
-        onPress={() => signUp(email, password, name)}
+        onPress={handleSignUp}
         isLoading={isAuthenticating}
         textStyle={{ fontSize: 18, fontWeight: 'bold' }}
       />
