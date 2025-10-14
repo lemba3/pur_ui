@@ -3,13 +3,14 @@ import { StyleSheet, View, FlatList, Image, ActivityIndicator } from 'react-nati
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import api from '@/lib/api';
+import { pusher } from '@/lib/pusher';
 import { useRouter } from 'expo-router';
 import InputModal from '@/components/ui/input-modal';
 import Button from '@/components/ui/button';
 
 import { useAuth } from '@/hooks/useAuth';
 import { myConstants } from '@/constants/my-constants';
-import { useConnectedBanks, useInvalidateBanks, ConnectedBank } from '@/hooks/bank';
+import { useConnectedBanks, ConnectedBank, useInvalidateBanks } from '@/hooks/bank';
 import { useGenerateReport } from '@/hooks/report';
 
 export default function HomeScreen() {
@@ -22,12 +23,32 @@ export default function HomeScreen() {
   const { session, isLoading: isAuthLoading } = useAuth();
 
   useEffect(() => {
-    if (!isAuthLoading && session) {
-      api.defaults.headers.common['Authorization'] = `Bearer ${session.token.accessToken}`;
-    } else if (!isAuthLoading && !session) {
-      delete api.defaults.headers.common['Authorization'];
+    if (isAuthLoading || !session) {
+      return;
     }
-  }, [isAuthLoading, session]);
+
+    api.defaults.headers.common['Authorization'] = `Bearer ${session.token.accessToken}`;
+
+    const channelName = `user-${session.user.id}`;
+    let channel = pusher.channel(channelName);
+    if (!channel) {
+      channel = pusher.subscribe(channelName);
+    }
+
+    const handleItemAdded = () => {
+      console.log('Pusher event received: item-added');
+      invalidateBanks();
+    };
+
+    channel.bind('item-added', handleItemAdded);
+
+    return () => {
+      if (channel) {
+        channel.unbind('item-added', handleItemAdded);
+        pusher.unsubscribe(channelName);
+      }
+    };
+  }, [isAuthLoading, session, invalidateBanks]);
 
   const handleAddBank = useCallback(() => {
     router.push('/plaid-hosted-link');

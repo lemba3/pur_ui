@@ -3,11 +3,11 @@ import { View, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { WebView } from 'react-native-webview';
 import api from '@/lib/api';
-import { useInvalidateBanks } from '@/hooks/bank';
+// import { useInvalidateBanks } from '@/hooks/bank';
 
 export default function PlaidWebviewScreen() {
   const router = useRouter();
-  const invalidateBanks = useInvalidateBanks();
+  // const invalidateBanks = useInvalidateBanks();
   const [plaidUrl, setPlaidUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export default function PlaidWebviewScreen() {
       try {
         await api.post('/plaid/exchange-public-token', { public_token: publicToken });
         console.log("Success: Bank account linked successfully!");
-        invalidateBanks();
+        // invalidateBanks();
       } catch (error: any) {
         console.error("Error: Could not exchange public token.", error.response?.data || error.message);
       } finally {
