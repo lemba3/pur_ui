@@ -1,7 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuth } from './useAuth';
-import { useCallback } from 'react';
 
 export interface ConnectedBank {
   itemId: string;
@@ -36,7 +35,7 @@ export const useConnectedBanks = () => {
 export const useInvalidateBanks = () => {
   const queryClient = useQueryClient();
   const { session } = useAuth();
-  return useCallback(() => {
+  return () => {
     queryClient.invalidateQueries({ queryKey: ['connectedBanks', session?.token.accessToken] });
-  }, [queryClient, session?.token.accessToken]);
+  }
 }

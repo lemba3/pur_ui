@@ -23,29 +23,60 @@ export default function HomeScreen() {
   const { session, isLoading: isAuthLoading } = useAuth();
 
   useEffect(() => {
+    console.log('[Debug] Component effect running, auth loading:', isAuthLoading, 'has session:', !!session);
+
+    // Clean up function - extracted to be used both on unmount and when session becomes null
+    const cleanupPusherSubscription = (userId: string) => {
+      const channelName = `user-${userId}`;
+      console.log('[Debug] Cleaning up Pusher subscription for channel:', channelName);
+      const channel = pusher.channel(channelName);
+      if (channel) {
+        channel.unbind_all();
+        pusher.unsubscribe(channelName);
+        console.log('[Debug] Successfully cleaned up Pusher subscription');
+      }
+    };
+
+    // If we're loading or no session (including logout), cleanup and return
     if (isAuthLoading || !session) {
+      if (!isAuthLoading && !session) {
+        // This case specifically handles logout
+        const channels = pusher.channels;
+        for (const channelName in channels.channels) {
+          if (channelName.startsWith('user-')) {
+            const userId = channelName.replace('user-', '');
+            cleanupPusherSubscription(userId);
+          }
+        }
+      }
       return;
     }
 
     api.defaults.headers.common['Authorization'] = `Bearer ${session.token.accessToken}`;
 
     const channelName = `user-${session.user.id}`;
-    let channel = pusher.channel(channelName);
-    if (!channel) {
-      channel = pusher.subscribe(channelName);
+
+    // Check if we're already subscribed
+    const existingChannel = pusher.channel(channelName);
+    if (existingChannel) {
+      console.log('[Debug] Channel already exists, skipping subscription');
+      return;
     }
 
+    console.log('[Debug] Creating new Pusher subscription for channel:', channelName);
+    const channel = pusher.subscribe(channelName);
+
     const handleItemAdded = () => {
-      console.log('Pusher event received: item-added');
+      console.log('[Debug] Pusher event received: item-added');
       invalidateBanks();
     };
 
     channel.bind('item-added', handleItemAdded);
 
+    // This cleanup runs on both unmount and when session changes/becomes null
     return () => {
-      if (channel) {
-        channel.unbind('item-added', handleItemAdded);
-        pusher.unsubscribe(channelName);
+      if (session?.user?.id) {
+        cleanupPusherSubscription(session.user.id);
       }
     };
   }, [isAuthLoading, session, invalidateBanks]);
