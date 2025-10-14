@@ -3,7 +3,7 @@ import { StyleSheet, View, FlatList, Image, ActivityIndicator } from 'react-nati
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import api from '@/lib/api';
-import { create, open, LinkSuccess, LinkExit, LinkIOSPresentationStyle, LinkLogLevel } from 'react-native-plaid-link-sdk';
+import { useRouter } from 'expo-router';
 import InputModal from '@/components/ui/input-modal';
 import Button from '@/components/ui/button';
 
@@ -16,8 +16,7 @@ export default function HomeScreen() {
   const { data: connectedBanks, isLoading: isFetchingBanks } = useConnectedBanks();
   const invalidateBanks = useInvalidateBanks();
   const { mutate: generateReport, isPending: isVerifying } = useGenerateReport();
-
-  const [isAddingBank, setIsAddingBank] = useState(false);
+  const router = useRouter();
   const [isModalVisible, setModalVisible] = useState(false);
 
   const { session, isLoading: isAuthLoading } = useAuth();
@@ -30,49 +29,9 @@ export default function HomeScreen() {
     }
   }, [isAuthLoading, session]);
 
-  const handleAddBank = useCallback(async () => {
-    setIsAddingBank(true);
-    try {
-      const response = await api.post('/plaid/create-link-token');
-      const linkToken = response.data.link_token;
-
-      if (!linkToken) {
-        console.error("Error: Failed to get link token.");
-        setIsAddingBank(false);
-        return;
-      }
-
-      create({ token: linkToken, noLoadingState: false });
-
-      open({
-        onSuccess: async (success: LinkSuccess) => {
-          setTimeout(async () => {
-            try {
-              await api.post('/plaid/exchange-public-token', { public_token: success.publicToken });
-              console.log("Success: Bank account linked successfully!");
-              invalidateBanks(); // Invalidate and refetch
-            } catch (error: any) {
-              console.error("Error: Could not link bank account.", error.response?.data || error.message);
-            }
-          }, 500);
-        },
-        onExit: (exit: LinkExit) => {
-          setTimeout(() => {
-            if (exit.error) {
-              console.error("Plaid Link Exit Error:", JSON.stringify(exit.error));
-            }
-          }, 500);
-        },
-        iOSPresentationStyle: LinkIOSPresentationStyle.MODAL,
-        logLevel: LinkLogLevel.DEBUG,
-      });
-
-    } catch (error: any) {
-      console.error("Error: An error occurred while adding the bank.", error.response?.data || error.message);
-    } finally {
-      setIsAddingBank(false);
-    }
-  }, [invalidateBanks]);
+  const handleAddBank = useCallback(() => {
+    router.push('/plaid-hosted-link');
+  }, [router]);
 
   const handleGenerateReport = useCallback(() => {
     setModalVisible(true);
@@ -105,7 +64,7 @@ export default function HomeScreen() {
     </View>
   );
 
-  const isBusy = isAddingBank || isVerifying;
+  const isBusy = isVerifying;
 
   return (
     <>
@@ -131,9 +90,6 @@ export default function HomeScreen() {
           <Button
             onPress={handleAddBank}
             title="Add Bank"
-            isLoading={isAddingBank}
-            disabled={isBusy}
-            style={{ flex: 1 }}
           />
           <Button
             onPress={handleGenerateReport}
