@@ -58,7 +58,20 @@ const generateReportHtml = (data: any) => {
         .details-row:last-child { border-bottom: none; } 
         .info-label { color: ${labelColor}; font-weight: 600; font-size: 13px; } 
         .info-value { color: ${textColor}; font-size: 14px; text-align: right; } 
-        .footer { border-top: 1px solid #eee; margin-top: 30px; padding: 16px; color: #666; font-size: 12px; text-align: center; } 
+        .footer { border-top: 1px solid #eee; margin-top: 30px; padding: 16px; color: #666; font-size: 12px; text-align: center; }
+        .empty-text { text-align: center; color: #777; padding: 12px 0; }
+        .account-header { 
+          background-color: #f0f7ff; 
+          padding: 8px 12px; 
+          border-top-left-radius: 8px;
+          border-top-right-radius: 8px;
+          border-bottom: 1px solid #e5e7eb;
+        }
+        .account-title {
+          font-size: 15px;
+          font-weight: 600;
+          color: #1E3A8A;
+        }
       </style>
     </head>
     <body>
@@ -74,7 +87,8 @@ const generateReportHtml = (data: any) => {
           <div class="amount-highlight">
             <div class="amount-label">Verification Amount</div>
             <div class="amount-text">${formatCurrency(requestedAmount)}</div>
-            <div class="amount-sub">Compared across ${bankNames.length} ${bankNames.length === 1 ? 'bank' : 'banks'}</div>
+            <div class="amount-sub">As of ${new Date().toLocaleDateString("en-US")}</div>
+          </div>
           </div>
           <div class="section-header">Account Holder Information</div>
           <div class="details-box">
@@ -82,29 +96,38 @@ const generateReportHtml = (data: any) => {
               <span class="info-label">Account Holder Name</span>
               <span class="info-value">${accountHolderName || '-'}</span>
             </div>
-            ${accounts.map((acc: AccountDetails) => `
-              <div class="details-row">
-                <span class="info-label">Bank Account Name</span>
-                <span class="info-value">${acc.name || '-'}</span>
-              </div>
-              <div class="details-row">
-                <span class="info-label">Bank</span>
-                <span class="info-value">${acc.bankName || '-'}</span>
-              </div>
-              <div class="details-row">
-                <span class="info-label">Account Type</span>
-                <span class="info-value">${acc.type || '-'}</span>
-              </div>
-              <div class="details-row">
-                <span class="info-label">Subtype</span>
-                <span class="info-value">${acc.subtype || '-'}</span>
-              </div>
-              <div class="details-row">
-                <span class="info-label">Account Number (Last 4)</span>
-                <span class="info-value">•••• ${acc.maskedNumber || '-'}</span>
+          </div>
+
+          <div class="section-header">Connected Account${accounts.length !== 1 ? 's' : ''} (${accounts.length})</div>
+          ${accounts.length === 0
+      ? `<div class="empty-text">No Account data available.</div>`
+      : accounts.map((acc: AccountDetails, index: number) => `
+              <div class="details-box" style="margin-top: ${index > 0 ? '12px' : '0'}">
+                <div class="account-header">
+                  <span class="account-title">Account ${index + 1}</span>
+                </div>
+                <div class="details-row">
+                  <span class="info-label">Bank Account Name</span>
+                  <span class="info-value">${acc.name || '-'}</span>
+                </div>
+                <div class="details-row">
+                  <span class="info-label">Bank</span>
+                  <span class="info-value">${acc.bankName || '-'}</span>
+                </div>
+                <div class="details-row">
+                  <span class="info-label">Account Type</span>
+                  <span class="info-value">${acc.type || '-'}</span>
+                </div>
+                <div class="details-row">
+                  <span class="info-label">Subtype</span>
+                  <span class="info-value">${acc.subtype || '-'}</span>
+                </div>
+                <div class="details-row" style="border-bottom: none;">
+                  <span class="info-label">Account Number (Last 4)</span>
+                  <span class="info-value">&#8226;&#8226;&#8226;&#8226; ${acc.maskedNumber || '-'}</span>
+                </div>
               </div>
             `).join('')}
-          </div>
           <div class="section-header">Verification Details</div>
           <div class="details-box">
             <div class="details-row">
@@ -120,6 +143,18 @@ const generateReportHtml = (data: any) => {
               <span class="info-value" style="color: ${sufficient ? successColor : errorColor}; font-weight: bold;">${sufficient ? 'Verified' : 'Rejected'}</span>
             </div>
           </div>
+          <div class="section-header"></div>
+          <div class="details-box" style="background-color: #f0f9ff; border-left: 4px solid #3B82F6;">
+            <div class="details-row" style="border-bottom: none;">
+              <span class="info-value" style="text-align: left; flex: 1;">
+                ${sufficient
+      ? `This verification report confirms that ${accountHolderName} has verified funds of ${formatCurrency(requestedAmount)} in their ${accounts[0]?.type || 'N/A'} account ending in &#8226;&#8226;&#8226;&#8226; ${accounts[0]?.maskedNumber || 'N/A'} at ${accounts[0]?.bankName || 'N/A'} Bank.`
+      : `This verification report indicates that ${accountHolderName} has insufficient funds of ${formatCurrency(requestedAmount)} in their ${accounts[0]?.type || 'N/A'} account ending in &#8226;&#8226;&#8226;&#8226; ${accounts[0]?.maskedNumber || 'N/A'} at ${accounts[0]?.bankName || 'N/A'} Bank.`
+    }
+              </span>
+            </div>
+          </div>
+
           <div class="footer">
             This report was automatically generated by the Banking Verification System.
           </div>
@@ -289,46 +324,53 @@ const generateReportHtml = (data: any) => {
             </ThemedText>
 
             <ThemedText style={styles.amountSub}>
-              Compared across {bankNames.length}{' '}
-              Bank{bankNames.length !== 1 ? 's' : ''}
+              As of {new Date().toLocaleDateString("en-US")}
             </ThemedText>
           </View>
 
           {/* Account Holder Information Section */}
           <ThemedText style={styles.sectionHeader}>Account Holder Information</ThemedText>
+          <View style={styles.accountBox}>
+            <View style={styles.accountRow}>
+              <ThemedText style={styles.infoLabel}>Account Holder Name</ThemedText>
+              <ThemedText style={styles.infoValue}>{userName}</ThemedText>
+            </View>
+          </View>
+
+          {/* Connected Accounts Section */}
+          <ThemedText style={styles.sectionHeader}>
+            Connected Account{accounts.length !== 1 ? 's' : ''} ({accounts.length})
+          </ThemedText>
           {accounts.length === 0 ? (
             <ThemedText style={styles.emptyText}>No Account data available.</ThemedText>
           ) : (
-            <View style={styles.accountBox}>
-              <View style={styles.accountRow}>
-                <ThemedText style={styles.infoLabel}>Account Holder Name</ThemedText>
-                <ThemedText style={styles.infoValue}>{userName}</ThemedText>
+            accounts.map((acc: any, index: number) => (
+              <View key={acc.plaidAccountId} style={[styles.accountBox, index > 0 && { marginTop: 12 }]}>
+                <View style={styles.accountHeaderRow}>
+                  <ThemedText style={styles.accountHeaderText}>Account {index + 1}</ThemedText>
+                </View>
+                <View style={styles.accountRow}>
+                  <ThemedText style={styles.infoLabel}>Bank Account Name</ThemedText>
+                  <ThemedText style={styles.infoValue}>{acc.name || '-'}</ThemedText>
+                </View>
+                <View style={styles.accountRow}>
+                  <ThemedText style={styles.infoLabel}>Bank</ThemedText>
+                  <ThemedText style={styles.infoValue}>{acc.bankName || '-'}</ThemedText>
+                </View>
+                <View style={styles.accountRow}>
+                  <ThemedText style={styles.infoLabel}>Account Type</ThemedText>
+                  <ThemedText style={styles.infoValue}>{acc.type || '-'}</ThemedText>
+                </View>
+                <View style={styles.accountRow}>
+                  <ThemedText style={styles.infoLabel}>Subtype</ThemedText>
+                  <ThemedText style={styles.infoValue}>{acc.subtype || '-'}</ThemedText>
+                </View>
+                <View style={[styles.accountRow, { borderBottomWidth: 0 }]}>
+                  <ThemedText style={styles.infoLabel}>Account Number (Last 4)</ThemedText>
+                  <ThemedText style={styles.infoValue}>•••• {acc.maskedNumber || '-'}</ThemedText>
+                </View>
               </View>
-              {accounts.map((acc: any, index: number) => (
-                <React.Fragment key={acc.plaidAccountId}>
-                  <View style={styles.accountRow}>
-                    <ThemedText style={styles.infoLabel}>Bank Account Name</ThemedText>
-                    <ThemedText style={styles.infoValue}>{acc.name || '-'}</ThemedText>
-                  </View>
-                  <View style={styles.accountRow}>
-                    <ThemedText style={styles.infoLabel}>Bank</ThemedText>
-                    <ThemedText style={styles.infoValue}>{acc.bankName || '-'}</ThemedText>
-                  </View>
-                  <View style={styles.accountRow}>
-                    <ThemedText style={styles.infoLabel}>Account Type</ThemedText>
-                    <ThemedText style={styles.infoValue}>{acc.type || '-'}</ThemedText>
-                  </View>
-                  <View style={styles.accountRow}>
-                    <ThemedText style={styles.infoLabel}>Subtype</ThemedText>
-                    <ThemedText style={styles.infoValue}>{acc.subtype || '-'}</ThemedText>
-                  </View>
-                  <View style={[styles.accountRow, { borderBottomWidth: index === accounts.length - 1 ? 0 : 1 }]}>
-                    <ThemedText style={styles.infoLabel}>Account Number (Last 4)</ThemedText>
-                    <ThemedText style={styles.infoValue}>•••• {acc.maskedNumber || '-'}</ThemedText>
-                  </View>
-                </React.Fragment>
-              ))}
-            </View>
+            ))
           )}
 
           {/* Verification Details Section */}
@@ -362,15 +404,13 @@ const generateReportHtml = (data: any) => {
             />
             <ThemedText style={styles.noteText}>
               {sufficient
-                ? `This report confirms sufficient total funds across ${bankNames.length} linked bank${bankNames.length !== 1 ? 's' : ''
-                }.`
-                : `Funds across ${bankNames.length} bank${bankNames.length !== 1 ? 's' : ''
-                } are insufficient for the requested amount.`}
+                ? `This verification report confirms that ${userName} has verified funds of ${formatCurrency(requestedAmount)} in their ${accounts[0]?.type || 'N/A'} account ending in ${accounts[0]?.maskedNumber || 'N/A'} at ${accounts[0]?.bankName || 'N/A'} Bank.`
+                : `This verification report indicates that ${userName} has insufficient funds of ${formatCurrency(requestedAmount)} in their ${accounts[0]?.type || 'N/A'} account ending in ${accounts[0]?.maskedNumber || 'N/A'} at ${accounts[0]?.bankName || 'N/A'} Bank.`}
             </ThemedText>
           </View>
 
           {/* Footer */}
-          <View style={styles.footer}>
+          <View style={[styles.footer, { marginBottom: 80 }]}>
             <ThemedText style={styles.footerText}>
               This report was automatically generated by the Banking Verification System.
             </ThemedText>
@@ -387,6 +427,20 @@ const generateReportHtml = (data: any) => {
 const styles = StyleSheet.create({
   pageContainer: {
     flex: 1,
+  },
+  accountHeaderRow: {
+    backgroundColor: '#f0f7ff',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  accountHeaderText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1E3A8A',
   },
   pageContainer_center: {
     flex: 1,
