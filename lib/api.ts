@@ -1,4 +1,4 @@
-import { myConstants } from '@/constants/my-constants';
+import { EXPO_PUBLIC_BASE_API_URL } from '@/constants/my-constants';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
@@ -9,7 +9,7 @@ export function setOnTokenRefresh(callback: (session: any) => void) {
 }
 
 const api = axios.create({
-  baseURL: myConstants.BASE_API_URL,
+  baseURL: EXPO_PUBLIC_BASE_API_URL,
   withCredentials: true, // This is important to send cookies
 });
 

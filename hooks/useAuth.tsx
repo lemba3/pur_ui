@@ -2,7 +2,7 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import axios, { isAxiosError } from 'axios';
-import { myConstants } from '@/constants/my-constants';
+import { EXPO_PUBLIC_BASE_API_URL } from '@/constants/my-constants';
 import api, { setOnTokenRefresh } from '@/lib/api'; // Import api and setOnTokenRefresh
 
 interface Session {
@@ -24,7 +24,7 @@ const AuthContext = createContext<{
   session?: Session | null;
   isLoading: boolean;
   isAuthenticating: boolean;
-}>({ 
+}>({
   signIn: () => Promise.resolve(),
   signOut: () => { },
   signUp: () => Promise.resolve(),
@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     setIsAuthenticating(true);
     try {
-      const response = await axios.post(myConstants.BASE_API_URL + '/auth/login', {
+      const response = await axios.post(EXPO_PUBLIC_BASE_API_URL + '/auth/login', {
         email,
         password,
       });
@@ -99,7 +99,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsAuthenticating(true);
     try {
       // NOTE: Replace with your actual backend URL
-      await axios.post(myConstants.BASE_API_URL + '/auth/signup', {
+      await axios.post(EXPO_PUBLIC_BASE_API_URL + '/auth/signup', {
         email,
         password,
         name,

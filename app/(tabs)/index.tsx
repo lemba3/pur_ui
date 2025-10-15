@@ -9,7 +9,7 @@ import InputModal from '@/components/ui/input-modal';
 import Button from '@/components/ui/button';
 
 import { useAuth } from '@/hooks/useAuth';
-import { myConstants } from '@/constants/my-constants';
+import { EXPO_PUBLIC_BANKLOGO } from '@/constants/my-constants';
 import { useConnectedBanks, ConnectedBank, useInvalidateBanks } from '@/hooks/bank';
 import { useGenerateReport } from '@/hooks/report';
 
@@ -108,7 +108,7 @@ export default function HomeScreen() {
         />
       ) : (
         <Image
-          source={{ uri: `data:image/png;base64,${myConstants.BANKLOGO.default}` }}
+          source={{ uri: `data:image/png;base64,${EXPO_PUBLIC_BANKLOGO.default}` }}
           style={styles.bankLogo}
         />
       )}
