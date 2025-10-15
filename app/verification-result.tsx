@@ -8,11 +8,20 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { useGetReport } from '@/hooks/report'; // Import the renamed hook
 
+interface AccountDetails {
+  plaidAccountId: string;
+  name: string;
+  bankName: string;
+  type: string;
+  subtype: string;
+  maskedNumber: string;
+}
+
 // Helper to generate the HTML report
 const generateReportHtml = (data: any) => {
   const {
-    sufficient, requestedAmount, currency, bankNames,
-    reportId, generatedAt, accountHolderName
+    sufficient, requestedAmount, currency, bankNames = [],
+    reportId, generatedAt, accountHolderName, accounts = []
   } = data;
 
   const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
@@ -32,24 +41,24 @@ const generateReportHtml = (data: any) => {
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Bank Balance Verification Report</title>
       <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: ${pageBackgroundColor}; }
-        .page { padding: 20px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: ${pageBackgroundColor}; } 
+        .page { padding: 20px; } 
         .card { background-color: ${cardBackgroundColor}; border-radius: 12px; box-shadow: 0 3px 8px rgba(0,0,0,0.07); overflow: hidden; text-align: center; } 
-        .header { background-color: ${headerBackgroundColor}; padding: 24px 16px; text-align: center; color: #fff; }
-        .header-title { font-size: 22px; font-weight: bold; margin: 0; }
-        .header-subtitle { color: #e0e0e0; margin-top: 6px; font-size: 13px; }
+        .header { background-color: ${headerBackgroundColor}; padding: 24px 16px; text-align: center; color: #fff; } 
+        .header-title { font-size: 22px; font-weight: bold; margin: 0; } 
+        .header-subtitle { color: #e0e0e0; margin-top: 6px; font-size: 13px; } 
         .badge { display:inline-block; margin:20px auto; border-radius:20px; padding:8px 20px; background-color:${sufficient ? successColor : errorColor}; color:#fff; font-weight:600; text-align:center; white-space:nowrap; } 
-        .amount-highlight { background-color: #f8f9fa; border-left: 4px solid ${sufficient ? successColor : errorColor}; padding: 18px; border-radius: 8px; text-align: center; margin: 20px 16px; }
-        .amount-label { font-size: 14px; font-weight: 600; color: ${sufficient ? successColor : errorColor}; }
-        .amount-text { font-size: 26px; font-weight: bold; color: #111; margin: 6px 0; }
-        .amount-sub { color: #666; font-size: 13px; }
-        .section-header { font-size: 17px; font-weight: bold; color: ${labelColor}; margin: 20px 16px 8px 16px; }
-        .details-box { background-color: #f8f9fa; border-radius: 8px; margin: 0 16px 14px 16px; border: 1px solid #e5e7eb; }
-        .details-row { display: flex; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid #eee; }
-        .details-row:last-child { border-bottom: none; }
-        .info-label { color: ${labelColor}; font-weight: 600; font-size: 13px; }
-        .info-value { color: ${textColor}; font-size: 14px; text-align: right; }
-        .footer { border-top: 1px solid #eee; margin-top: 30px; padding: 16px; color: #666; font-size: 12px; text-align: center; }
+        .amount-highlight { background-color: #f8f9fa; border-left: 4px solid ${sufficient ? successColor : errorColor}; padding: 18px; border-radius: 8px; text-align: center; margin: 20px 16px; } 
+        .amount-label { font-size: 14px; font-weight: 600; color: ${sufficient ? successColor : errorColor}; } 
+        .amount-text { font-size: 26px; font-weight: bold; color: #111; margin: 6px 0; } 
+        .amount-sub { color: #666; font-size: 13px; } 
+        .section-header { font-size: 17px; font-weight: bold; color: ${labelColor}; margin: 20px 16px 8px 16px; } 
+        .details-box { background-color: #f8f9fa; border-radius: 8px; margin: 0 16px 14px 16px; border: 1px solid #e5e7eb; } 
+        .details-row { display: flex; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid #eee; } 
+        .details-row:last-child { border-bottom: none; } 
+        .info-label { color: ${labelColor}; font-weight: 600; font-size: 13px; } 
+        .info-value { color: ${textColor}; font-size: 14px; text-align: right; } 
+        .footer { border-top: 1px solid #eee; margin-top: 30px; padding: 16px; color: #666; font-size: 12px; text-align: center; } 
       </style>
     </head>
     <body>
@@ -67,16 +76,34 @@ const generateReportHtml = (data: any) => {
             <div class="amount-text">${formatCurrency(requestedAmount)}</div>
             <div class="amount-sub">Compared across ${bankNames.length} ${bankNames.length === 1 ? 'bank' : 'banks'}</div>
           </div>
-          <div class="section-header">Account Details</div>
+          <div class="section-header">Account Holder Information</div>
           <div class="details-box">
             <div class="details-row">
-              <span class="info-label">Account Holder</span>
+              <span class="info-label">Account Holder Name</span>
               <span class="info-value">${accountHolderName || '-'}</span>
             </div>
-            <div class="details-row">
-              <span class="info-label">Banks</span>
-              <span class="info-value">${bankNames.join(', ')}</span>
-            </div>
+            ${accounts.map((acc: AccountDetails) => `
+              <div class="details-row">
+                <span class="info-label">Bank Account Name</span>
+                <span class="info-value">${acc.name || '-'}</span>
+              </div>
+              <div class="details-row">
+                <span class="info-label">Bank</span>
+                <span class="info-value">${acc.bankName || '-'}</span>
+              </div>
+              <div class="details-row">
+                <span class="info-label">Account Type</span>
+                <span class="info-value">${acc.type || '-'}</span>
+              </div>
+              <div class="details-row">
+                <span class="info-label">Subtype</span>
+                <span class="info-value">${acc.subtype || '-'}</span>
+              </div>
+              <div class="details-row">
+                <span class="info-label">Account Number (Last 4)</span>
+                <span class="info-value">•••• ${acc.maskedNumber || '-'}</span>
+              </div>
+            `).join('')}
           </div>
           <div class="section-header">Verification Details</div>
           <div class="details-box">
@@ -101,9 +128,7 @@ const generateReportHtml = (data: any) => {
     </body>
     </html>
   `;
-};
-
-export default function VerificationResultScreen() {
+}; export default function VerificationResultScreen() {
   const params = useLocalSearchParams<{
     reportId?: string;
     sufficient?: string; // boolean as string
@@ -111,12 +136,13 @@ export default function VerificationResultScreen() {
     bankNames?: string; // comma-separated string
     userName?: string;
     generatedAt?: string;
+    accounts?: string; // JSON string of accounts
   }>();
 
   const { session } = useAuth();
 
   // Parse values from params if present
-  const hasAllDataInParams = !!(params.sufficient && params.requestedAmount && params.bankNames && params.generatedAt);
+  const hasAllDataInParams = !!(params.sufficient && params.requestedAmount && params.bankNames && params.generatedAt && params.accounts);
 
   const parsedData = hasAllDataInParams
     ? {
@@ -126,6 +152,7 @@ export default function VerificationResultScreen() {
       userName: params.userName || session?.user?.name, // Use session user name if not in params
       generatedAt: params.generatedAt,
       reportId: params.reportId, // reportId might be present even if other data is
+      accounts: JSON.parse(params.accounts!), // Parse accounts JSON string
     }
     : undefined;
 
@@ -142,6 +169,7 @@ export default function VerificationResultScreen() {
   const generatedAt = reportData?.generatedAt;
   const reportId = reportData?.reportId;
   const currency = 'USD';
+  const accounts = reportData?.accounts ?? []; // <--- Add this
 
   const formatCurrency = (amount: number) => {
     if (isNaN(amount)) return '-';
@@ -158,10 +186,11 @@ export default function VerificationResultScreen() {
         sufficient: reportData.sufficient,
         requestedAmount: reportData.requestedAmount,
         currency,
-        bankNames: reportData.bankNames,
+        bankNames: reportData.bankNames ?? [],
         reportId: reportData.reportId,
         generatedAt: reportData.generatedAt,
         accountHolderName: userName,
+        accounts: reportData.accounts ?? [], // <--- Add this
       });
 
       const fileUri = (FileSystem.documentDirectory ?? '') + 'verification-report.html';
@@ -175,7 +204,7 @@ export default function VerificationResultScreen() {
         return;
       }
 
-      await Sharing.shareAsync(fileUri, { 
+      await Sharing.shareAsync(fileUri, {
         mimeType: 'text/html',
         dialogTitle: 'Download Verification Report',
       });
@@ -265,22 +294,40 @@ export default function VerificationResultScreen() {
             </ThemedText>
           </View>
 
-          {/* Account Details Section */}
-          <ThemedText style={styles.sectionHeader}>Account Details</ThemedText>
-          {bankNames.length === 0 ? (
-            <ThemedText style={styles.emptyText}>No Bank data available.</ThemedText>
+          {/* Account Holder Information Section */}
+          <ThemedText style={styles.sectionHeader}>Account Holder Information</ThemedText>
+          {accounts.length === 0 ? (
+            <ThemedText style={styles.emptyText}>No Account data available.</ThemedText>
           ) : (
             <View style={styles.accountBox}>
               <View style={styles.accountRow}>
-                <ThemedText style={styles.infoLabel}>Account Holder</ThemedText>
+                <ThemedText style={styles.infoLabel}>Account Holder Name</ThemedText>
                 <ThemedText style={styles.infoValue}>{userName}</ThemedText>
               </View>
-              <View style={[styles.accountRow, { borderBottomWidth: 0 }]}>
-                <ThemedText style={styles.infoLabel}>Banks</ThemedText>
-                <ThemedText style={styles.infoValue} selectable>
-                  {bankNames.join(', ')}
-                </ThemedText>
-              </View>
+              {accounts.map((acc: any, index: number) => (
+                <React.Fragment key={acc.plaidAccountId}>
+                  <View style={styles.accountRow}>
+                    <ThemedText style={styles.infoLabel}>Bank Account Name</ThemedText>
+                    <ThemedText style={styles.infoValue}>{acc.name || '-'}</ThemedText>
+                  </View>
+                  <View style={styles.accountRow}>
+                    <ThemedText style={styles.infoLabel}>Bank</ThemedText>
+                    <ThemedText style={styles.infoValue}>{acc.bankName || '-'}</ThemedText>
+                  </View>
+                  <View style={styles.accountRow}>
+                    <ThemedText style={styles.infoLabel}>Account Type</ThemedText>
+                    <ThemedText style={styles.infoValue}>{acc.type || '-'}</ThemedText>
+                  </View>
+                  <View style={styles.accountRow}>
+                    <ThemedText style={styles.infoLabel}>Subtype</ThemedText>
+                    <ThemedText style={styles.infoValue}>{acc.subtype || '-'}</ThemedText>
+                  </View>
+                  <View style={[styles.accountRow, { borderBottomWidth: index === accounts.length - 1 ? 0 : 1 }]}>
+                    <ThemedText style={styles.infoLabel}>Account Number (Last 4)</ThemedText>
+                    <ThemedText style={styles.infoValue}>•••• {acc.maskedNumber || '-'}</ThemedText>
+                  </View>
+                </React.Fragment>
+              ))}
             </View>
           )}
 
@@ -370,7 +417,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#fff' },
   headerSubtitle: { color: '#e0e0e0', marginTop: 6, fontSize: 13 },
-  divider: { 
+  divider: {
     height: 1,
     backgroundColor: '#e5e7eb',
   },

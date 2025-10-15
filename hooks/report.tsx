@@ -15,7 +15,17 @@ const fetchReports = async ({ pageParam = 1, queryKey }: { pageParam?: number, q
       pageSize: 10,
     },
   });
-  return response.data;
+
+  // Map reports to include bankNames
+  const reportsWithBankNames = response.data.reports.map((report: any) => ({
+    ...report,
+    bankNames: [...new Set(report.plaidItem.accounts.map((acc: any) => acc.bankName))],
+  }));
+
+  return {
+    ...response.data,
+    reports: reportsWithBankNames,
+  };
 };
 
 export const useReports = () => {
@@ -74,6 +84,7 @@ export const useGenerateReport = () => {
           bankNames: data.bankNames.join(','), // Convert array to comma-separated string
           userName: data.userName, // Get userName from the report data
           generatedAt: data.generatedAt, // Already a string
+          accounts: JSON.stringify(data.accounts), // Pass accounts as a JSON string
         },
       });
     },
