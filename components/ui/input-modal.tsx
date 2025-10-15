@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal, View, TextInput, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
@@ -7,7 +7,7 @@ import Button from './button';
 interface InputModalProps {
   visible: boolean;
   onClose: () => void;
-  onSubmit: (value: string) => void;
+  onSubmit: (value: { amount: string }) => void;
   title: string;
   inputLabel?: string;
   submitButtonText?: string;
@@ -25,9 +25,16 @@ export default function InputModal({
 }: InputModalProps) {
   const [inputValue, setInputValue] = useState('');
 
+  // Reset state when modal closes
+  useEffect(() => {
+    if (!visible) {
+      setInputValue('');
+    }
+  }, [visible]);
+
   const handleSubmit = () => {
     if (inputValue && !isLoading) {
-      onSubmit(inputValue);
+      onSubmit({ amount: inputValue });
       setInputValue('');
     }
   };
@@ -45,6 +52,7 @@ export default function InputModal({
       >
         <ThemedView style={styles.modalView}>
           <ThemedText type="subtitle">{title}</ThemedText>
+
           {inputLabel && <ThemedText style={styles.inputLabel}>{inputLabel}</ThemedText>}
           <TextInput
             style={styles.input}
@@ -57,8 +65,19 @@ export default function InputModal({
           />
           {isLoading && <ActivityIndicator size="large" color="#0000ff" style={styles.activityIndicator} />}
           <View style={styles.buttonContainer}>
-            <Button title="Cancel" onPress={onClose} color="#888" disabled={isLoading} style={{ flex: 1 }} />
-            <Button title={submitButtonText} onPress={handleSubmit} disabled={isLoading} style={{ flex: 1 }} />
+            <Button
+              title="Cancel"
+              onPress={onClose}
+              color="#888"
+              disabled={isLoading}
+              style={{ flex: 1 }}
+            />
+            <Button
+              title={submitButtonText}
+              onPress={handleSubmit}
+              disabled={isLoading || !inputValue}
+              style={{ flex: 1 }}
+            />
           </View>
         </ThemedView>
       </KeyboardAvoidingView>
@@ -93,6 +112,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 16,
     color: '#555',
+    fontWeight: '600',
   },
   input: {
     height: 50,
@@ -103,14 +123,16 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 10,
     fontSize: 16,
-    color: '#000', // Assuming light theme for input text
+    color: '#000',
     backgroundColor: '#fff',
   },
+
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     width: '100%',
     gap: 10,
+    marginTop: 10,
   },
   activityIndicator: {
     marginBottom: 15,

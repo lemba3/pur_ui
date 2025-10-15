@@ -41,8 +41,8 @@ export const useReports = () => {
   };
 };
 
-const generateReport = async (amount: number) => {
-  const response = await api.post('/plaid/generate-report', { amount });
+const generateReport = async ({ amount, itemId }: { amount: number; itemId: string }) => {
+  const response = await api.post('/plaid/generate-report', { amount, itemId });
   return response.data;
 };
 
@@ -54,8 +54,15 @@ export const useGenerateReport = () => {
   return useMutation({
     mutationFn: generateReport,
     onSuccess: (data) => {
-      // Invalidate the reports query to refetch the list
-      queryClient.invalidateQueries({ queryKey: ['reports', session?.token.accessToken] });
+      // Force refetch of both queries
+      queryClient.resetQueries({
+        queryKey: ['reports', session?.token.accessToken],
+        exact: true
+      });
+      queryClient.resetQueries({
+        queryKey: ['connectedBanks', session?.token.accessToken],
+        exact: true
+      });
 
       // Then, navigate to the verification result screen, passing only the reportId
       router.push({

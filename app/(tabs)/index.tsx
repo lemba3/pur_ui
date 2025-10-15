@@ -9,7 +9,7 @@ import InputModal from '@/components/ui/input-modal';
 import Button from '@/components/ui/button';
 
 import { useAuth } from '@/hooks/useAuth';
-import { useConnectedBanks, ConnectedBank, useInvalidateBanks } from '@/hooks/bank';
+import { useConnectedBanks, useInvalidateBanks } from '@/hooks/bank';
 import { useGenerateReport } from '@/hooks/report';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
@@ -19,6 +19,8 @@ export default function HomeScreen() {
   const { mutate: generateReport, isPending: isVerifying } = useGenerateReport();
   const router = useRouter();
   const [isModalVisible, setModalVisible] = useState(false);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [selectedBankName, setSelectedBankName] = useState<string>('');
 
   const { session, isLoading: isAuthLoading } = useAuth();
 
@@ -91,19 +93,27 @@ export default function HomeScreen() {
     });
   }, [router]);
 
-  const handleGenerateReport = useCallback(() => {
-    setModalVisible(true);
-  }, []);
-
-  const handleVerifyAmount = useCallback((amount: string) => {
-    const numericAmount = parseFloat(amount);
+  const handleVerifyAmount = useCallback((value: { amount: string }) => {
+    const numericAmount = parseFloat(value.amount);
     if (isNaN(numericAmount) || numericAmount <= 0) {
       console.error("Error: Please enter a valid positive amount.");
       return;
     }
+    if (!selectedItemId) {
+      console.error("No bank selected");
+      return;
+    }
     setModalVisible(false);
-    generateReport(numericAmount);
-  }, [generateReport]);
+    generateReport({ amount: numericAmount, itemId: selectedItemId });
+    setSelectedItemId(null);
+    setSelectedBankName('');
+  }, [generateReport, selectedItemId]);
+
+  const handleVerifyForBank = useCallback((itemId: string, bankName: string) => {
+    setSelectedItemId(itemId);
+    setSelectedBankName(bankName);
+    setModalVisible(true);
+  }, []);
 
   const renderBankItem = ({ item }: { item: any }) => (
     <View style={styles.bankItemContainer}>
@@ -121,12 +131,19 @@ export default function HomeScreen() {
             style={styles.bankLogo}
           />
         )}
-        <View>
+        <View style={styles.bankInfo}>
           <ThemedText style={styles.institutionName}>{item.institution.name}</ThemedText>
           <ThemedText style={styles.lastSyncText}>
             Last sync: {item.last_sync ? new Date(item.last_sync).toLocaleDateString() : 'N/A'}
           </ThemedText>
         </View>
+        <Button
+          onPress={() => handleVerifyForBank(item.itemId, item.institution.name)}
+          title="Verify"
+          isLoading={isVerifying && selectedItemId === item.itemId}
+          disabled={isVerifying}
+          style={styles.verifyButton}
+        />
       </View>
       {item.accounts && item.accounts.length > 0 && (
         <View style={styles.accountsContainer}>
@@ -172,20 +189,17 @@ export default function HomeScreen() {
             title="Add Bank"
             style={{ flex: 1 }}
           />
-          <Button
-            onPress={handleGenerateReport}
-            title="Verify Balance"
-            isLoading={isVerifying}
-            disabled={isBusy || !connectedBanks || connectedBanks.length === 0}
-            style={{ flex: 1 }}
-          />
         </View>
       </ThemedView>
       <InputModal
         visible={isModalVisible}
-        onClose={() => setModalVisible(false)}
+        onClose={() => {
+          setModalVisible(false);
+          setSelectedItemId(null);
+          setSelectedBankName('');
+        }}
         onSubmit={handleVerifyAmount}
-        title="Verify Account Balance"
+        title={`Verify Balance - ${selectedBankName}`}
         inputLabel="Amount to Verify"
         submitButtonText="Verify"
         isLoading={isVerifying}
@@ -214,6 +228,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
+    justifyContent: 'space-between',
+  },
+  bankInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  verifyButton: {
+    minWidth: 80,
+    height: 36,
+    paddingHorizontal: 12,
   },
   institutionName: {
     fontWeight: 'bold',
