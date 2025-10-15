@@ -41,8 +41,8 @@ export const useReports = () => {
   };
 };
 
-const generateReport = async ({ amount, itemId }: { amount: number; itemId: string }) => {
-  const response = await api.post('/plaid/generate-report', { amount, itemId });
+const generateReport = async ({ amount, plaidItemId }: { amount: number; plaidItemId: string }) => {
+  const response = await api.post('/plaid/generate-report', { amount, itemId: plaidItemId });
   return response.data;
 };
 
@@ -72,7 +72,7 @@ export const useGenerateReport = () => {
           sufficient: String(data.sufficient), // Convert boolean to string
           requestedAmount: String(data.requestedAmount), // Convert number to string
           bankNames: data.bankNames.join(','), // Convert array to comma-separated string
-          userName: session?.user?.name || '', // Get userName from session
+          userName: data.userName, // Get userName from the report data
           generatedAt: data.generatedAt, // Already a string
         },
       });

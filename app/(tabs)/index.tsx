@@ -104,7 +104,7 @@ export default function HomeScreen() {
       return;
     }
     setModalVisible(false);
-    generateReport({ amount: numericAmount, itemId: selectedItemId });
+    generateReport({ amount: numericAmount, plaidItemId: selectedItemId });
     setSelectedItemId(null);
     setSelectedBankName('');
   }, [generateReport, selectedItemId]);
