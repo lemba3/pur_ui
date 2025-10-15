@@ -9,9 +9,9 @@ import InputModal from '@/components/ui/input-modal';
 import Button from '@/components/ui/button';
 
 import { useAuth } from '@/hooks/useAuth';
-import { EXPO_PUBLIC_BANKLOGO } from '@/constants/my-constants';
 import { useConnectedBanks, ConnectedBank, useInvalidateBanks } from '@/hooks/bank';
 import { useGenerateReport } from '@/hooks/report';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 export default function HomeScreen() {
   const { data: connectedBanks, isLoading: isFetchingBanks } = useConnectedBanks();
@@ -82,7 +82,13 @@ export default function HomeScreen() {
   }, [isAuthLoading, session, invalidateBanks]);
 
   const handleAddBank = useCallback(() => {
-    router.push('/plaid-hosted-link');
+    // Use router.replace to prevent stacking of screens
+    router.push({
+      pathname: '/plaid-hosted-link',
+      params: {
+        redirect: '/(tabs)'
+      }
+    });
   }, [router]);
 
   const handleGenerateReport = useCallback(() => {
@@ -99,20 +105,42 @@ export default function HomeScreen() {
     generateReport(numericAmount);
   }, [generateReport]);
 
-  const renderBankItem = ({ item }: { item: ConnectedBank }) => (
+  const renderBankItem = ({ item }: { item: any }) => (
     <View style={styles.bankItemContainer}>
-      {item.institution.logo ? (
-        <Image
-          source={{ uri: `data:image/png;base64,${item.institution.logo}` }}
-          style={styles.bankLogo}
-        />
-      ) : (
-        <Image
-          source={{ uri: `data:image/png;base64,${EXPO_PUBLIC_BANKLOGO.default}` }}
-          style={styles.bankLogo}
-        />
+      <View style={styles.bankHeader}>
+        {item.institution.logo ? (
+          <Image
+            source={{ uri: `data:image/png;base64,${item.institution.logo}` }}
+            style={styles.bankLogo}
+          />
+        ) : (
+          <MaterialCommunityIcons
+            name="bank-outline"
+            size={32}
+            color="#666"
+            style={styles.bankLogo}
+          />
+        )}
+        <View>
+          <ThemedText style={styles.institutionName}>{item.institution.name}</ThemedText>
+          <ThemedText style={styles.lastSyncText}>
+            Last sync: {item.last_sync ? new Date(item.last_sync).toLocaleDateString() : 'N/A'}
+          </ThemedText>
+        </View>
+      </View>
+      {item.accounts && item.accounts.length > 0 && (
+        <View style={styles.accountsContainer}>
+          {item.accounts.map((account: any) => (
+            <View key={account.account_id} style={styles.accountItem}>
+              <ThemedText style={styles.accountName}>{account.name}</ThemedText>
+              <View style={styles.accountDetails}>
+                <ThemedText style={styles.accountSubtype}>{account.subtype}</ThemedText>
+                <ThemedText style={styles.accountMask}>•••• {account.mask}</ThemedText>
+              </View>
+            </View>
+          ))}
+        </View>
       )}
-      <ThemedText>{item.institution.name}</ThemedText>
     </View>
   );
 
@@ -142,6 +170,7 @@ export default function HomeScreen() {
           <Button
             onPress={handleAddBank}
             title="Add Bank"
+            style={{ flex: 1 }}
           />
           <Button
             onPress={handleGenerateReport}
@@ -175,13 +204,47 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   bankItemContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
     padding: 16,
     marginBottom: 8,
     borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 8,
+  },
+  bankHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  institutionName: {
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  lastSyncText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  accountsContainer: {},
+  accountItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    marginLeft: 56, // Aligns with the institution name
+  },
+  accountName: {
+    fontWeight: '500',
+  },
+  accountDetails: {
+    alignItems: 'flex-end',
+  },
+  accountSubtype: {
+    textTransform: 'capitalize',
+    color: '#666',
+  },
+  accountMask: {
+    color: '#666',
   },
   bankLogo: {
     width: 40,
