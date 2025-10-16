@@ -3,6 +3,7 @@ import { Modal, View, TextInput, StyleSheet, KeyboardAvoidingView, Platform, Act
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
 import Button from './button';
+import { Colors } from '@/constants/theme';
 
 interface InputModalProps {
   visible: boolean;
@@ -24,6 +25,7 @@ export default function InputModal({
   isLoading = false,
 }: InputModalProps) {
   const [inputValue, setInputValue] = useState('');
+  const currentColors = Colors['light'];
 
   // Reset state when modal closes
   useEffect(() => {
@@ -41,7 +43,7 @@ export default function InputModal({
 
   return (
     <Modal
-      animationType="slide"
+      animationType="fade" // Changed to fade for a smoother transition
       transparent={true}
       visible={visible}
       onRequestClose={onClose}
@@ -50,32 +52,38 @@ export default function InputModal({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.centeredView}
       >
-        <ThemedView style={styles.modalView}>
-          <ThemedText type="subtitle">{title}</ThemedText>
+        <ThemedView style={[styles.modalView, { backgroundColor: currentColors.cardBackground }]}>
+          <ThemedText type="subtitle" style={{ color: currentColors.text, fontSize: 22, fontWeight: 'bold', marginBottom: 15 }}>{title}</ThemedText>
 
-          {inputLabel && <ThemedText style={styles.inputLabel}>{inputLabel}</ThemedText>}
+          {inputLabel && <ThemedText style={[styles.inputLabel, { color: currentColors.text }]}>{inputLabel}</ThemedText>}
           <TextInput
-            style={styles.input}
+            style={[styles.input, {
+              borderColor: currentColors.icon,
+              color: currentColors.text,
+              backgroundColor: currentColors.inputBackground,
+            }]}
             keyboardType="numeric"
             onChangeText={setInputValue}
             value={inputValue}
             placeholder="e.g., 100.00"
-            placeholderTextColor="#999"
+            placeholderTextColor={currentColors.icon}
             editable={!isLoading}
           />
-          {isLoading && <ActivityIndicator size="large" color="#0000ff" style={styles.activityIndicator} />}
+          {isLoading && <ActivityIndicator size="large" color={currentColors.tint} style={styles.activityIndicator} />}
           <View style={styles.buttonContainer}>
             <Button
               title="Cancel"
               onPress={onClose}
-              color="#888"
+              color={currentColors.icon} // Neutral color for cancel
               disabled={isLoading}
               style={{ flex: 1 }}
             />
             <Button
               title={submitButtonText}
               onPress={handleSubmit}
+              color={currentColors.tint} // Themed color for submit
               disabled={isLoading || !inputValue}
+              textStyle={{ color: '#fff' }}
               style={{ flex: 1 }}
             />
           </View>
@@ -90,48 +98,44 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.6)', // Darker overlay
   },
   modalView: {
     margin: 20,
-    borderRadius: 20,
+    borderRadius: 15, // Slightly smaller border radius for modal
     padding: 25,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 5, // More pronounced shadow
     },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 8,
     width: '85%',
   },
   inputLabel: {
     alignSelf: 'flex-start',
-    marginBottom: 8,
-    marginTop: 16,
-    color: '#555',
+    marginBottom: 10,
+    marginTop: 10,
     fontWeight: '600',
+    fontSize: 16,
   },
   input: {
     height: 50,
-    borderColor: '#ccc',
     borderWidth: 1,
     marginBottom: 20,
     paddingHorizontal: 15,
     width: '100%',
     borderRadius: 10,
     fontSize: 16,
-    color: '#000',
-    backgroundColor: '#fff',
   },
-
   buttonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between', // Changed to space-between
     width: '100%',
-    gap: 10,
+    gap: 10, // Use gap for spacing
     marginTop: 10,
   },
   activityIndicator: {

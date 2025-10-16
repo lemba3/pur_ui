@@ -1,103 +1,137 @@
 import { useAuth } from '@/hooks/useAuth';
 import React, { useState } from 'react';
-import { View, TextInput, StyleSheet, Text, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, TextInput, StyleSheet, Text, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { Link } from 'expo-router';
 import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import Button from '@/components/ui/button';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { myColors } from '@/constants/my-constants';
 
 export default function Login() {
   const [email, setEmail] = useState('test@gmail.com');
   const [password, setPassword] = useState('test');
   const { signIn, isAuthenticating } = useAuth();
-  const colorScheme = useColorScheme();
-  const currentColors = Colors[colorScheme ?? 'light'];
+  const currentColors = Colors['light'];
+
+  const gradientColors: readonly [string, string, ...string[]] = [myColors.gradient1, myColors.gradient2]; // soft light gradient
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: currentColors.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    <LinearGradient
+      colors={gradientColors}
+      style={styles.gradient}
     >
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: currentColors.text }]}>Welcome Back</Text>
-        <Text style={[styles.subtitle, { color: currentColors.text }]}>Sign in to continue</Text>
-      </View>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <View style={styles.header}>
+          <Image source={require('@/assets/images/pur.png')} style={styles.logo} />
+          <Text style={[styles.title, { color: currentColors.text }]}>Welcome Back</Text>
+          <Text style={[styles.subtitle, { color: currentColors.text }]}>Sign in to continue</Text>
+        </View>
 
-      <View style={styles.form}>
-        <TextInput
-          style={[styles.input, { borderColor: currentColors.icon, color: currentColors.text, backgroundColor: currentColors.background }]}
-          placeholder="Email"
-          placeholderTextColor={currentColors.icon}
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
-        <TextInput
-          style={[styles.input, { borderColor: currentColors.icon, color: currentColors.text, backgroundColor: currentColors.background }]}
-          placeholder="Password"
-          placeholderTextColor={currentColors.icon}
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+        <View style={[styles.card, { backgroundColor: currentColors.cardBackground }]}>
+          <View style={[styles.inputContainer, { borderColor: currentColors.icon, backgroundColor: currentColors.inputBackground }]}>
+            <MaterialCommunityIcons name="email-outline" size={24} color={currentColors.icon} style={styles.icon} />
+            <TextInput
+              style={[styles.input, { color: currentColors.text }]} placeholder="Email"
+              placeholderTextColor={currentColors.icon}
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+          </View>
+          <View style={[styles.inputContainer, { borderColor: currentColors.icon, backgroundColor: currentColors.inputBackground }]}>
+            <MaterialCommunityIcons name="lock-outline" size={24} color={currentColors.icon} style={styles.icon} />
+            <TextInput
+              style={[styles.input, { color: currentColors.text }]} placeholder="Password"
+              placeholderTextColor={currentColors.icon}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+            />
+          </View>
 
-        <Button
-          title="Sign In"
-          onPress={() => signIn(email, password)}
-          isLoading={isAuthenticating}
-          textStyle={{ fontSize: 18, fontWeight: 'bold' }}
-        />
-        <Link href="/signup" style={styles.link}>
-          <Text style={[styles.linkText, { color: currentColors.tint }]}>
-            Don&apos;t have an account? Sign Up
-          </Text>
-        </Link>
-      </View>
-    </KeyboardAvoidingView>
+          <Button
+            title="Sign In"
+            onPress={() => signIn(email, password)}
+            isLoading={isAuthenticating}
+            textStyle={{ fontSize: 18, fontWeight: 'bold' }}
+          />
+          <Link href="/signup" style={styles.link}>
+            <Text style={[styles.linkText, { color: currentColors.tint }]}>
+              Don&apos;t have an account? Sign Up
+            </Text>
+          </Link>
+        </View>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
+  gradient: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     justifyContent: 'center',
-    padding: 24,
+    padding: 12,
   },
   header: {
     marginBottom: 40,
     alignItems: 'center',
   },
+  logo: {
+    width: 120,
+    height: 120,
+    marginBottom: 20,
+    resizeMode: 'contain',
+  },
   title: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: 'bold',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 18,
     marginTop: 8,
     textAlign: 'center',
+    opacity: 0.7,
   },
-  form: {
-    width: '100%',
+  card: {
+    borderRadius: 20,
+    padding: 20,
+    marginHorizontal: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 10 },
+    shadowRadius: 20,
+    elevation: 8, // Android shadow
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 55,
+    borderWidth: 1,
+    borderRadius: 15,
+    marginBottom: 18,
+    paddingHorizontal: 18,
+  },
+  icon: {
+    marginRight: 12,
   },
   input: {
-    height: 50,
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    fontSize: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2, // Android shadow
+    flex: 1,
+    fontSize: 17,
   },
   link: {
     alignSelf: 'center',
+    marginTop: 25,
   },
   linkText: {
-    fontSize: 14,
-    marginTop: 8,
+    fontSize: 15,
+    fontWeight: '500',
   },
 });

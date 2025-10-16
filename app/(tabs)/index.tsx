@@ -12,6 +12,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { useConnectedBanks, useInvalidateBanks } from '@/hooks/bank';
 import { useGenerateReport } from '@/hooks/report';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Colors } from '@/constants/theme';
+import { myColors } from '@/constants/my-constants';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   const { data: connectedBanks, isLoading: isFetchingBanks } = useConnectedBanks();
@@ -23,11 +27,13 @@ export default function HomeScreen() {
   const [selectedBankName, setSelectedBankName] = useState<string>('');
 
   const { session, isLoading: isAuthLoading } = useAuth();
+  const currentColors = Colors['light'];
+
+  const gradientColors: readonly [string, string, ...string[]] = [myColors.gradient1, myColors.gradient2]; // soft light gradient
 
   useEffect(() => {
     console.log('[Debug] Component effect running, auth loading:', isAuthLoading, 'has session:', !!session);
 
-    // Clean up function - extracted to be used both on unmount and when session becomes null
     const cleanupPusherSubscription = (userId: string) => {
       const channelName = `user-${userId}`;
       console.log('[Debug] Cleaning up Pusher subscription for channel:', channelName);
@@ -39,10 +45,8 @@ export default function HomeScreen() {
       }
     };
 
-    // If we're loading or no session (including logout), cleanup and return
     if (isAuthLoading || !session) {
       if (!isAuthLoading && !session) {
-        // This case specifically handles logout
         const channels = pusher.channels;
         for (const channelName in channels.channels) {
           if (channelName.startsWith('user-')) {
@@ -58,7 +62,6 @@ export default function HomeScreen() {
 
     const channelName = `user-${session.user.id}`;
 
-    // Check if we're already subscribed
     const existingChannel = pusher.channel(channelName);
     if (existingChannel) {
       console.log('[Debug] Channel already exists, skipping subscription');
@@ -75,7 +78,6 @@ export default function HomeScreen() {
 
     channel.bind('item-added', handleItemAdded);
 
-    // This cleanup runs on both unmount and when session changes/becomes null
     return () => {
       if (session?.user?.id) {
         cleanupPusherSubscription(session.user.id);
@@ -84,7 +86,6 @@ export default function HomeScreen() {
   }, [isAuthLoading, session, invalidateBanks]);
 
   const handleAddBank = useCallback(() => {
-    // Use router.replace to prevent stacking of screens
     router.push({
       pathname: '/plaid-hosted-link',
       params: {
@@ -116,175 +117,238 @@ export default function HomeScreen() {
   }, []);
 
   const renderBankItem = ({ item }: { item: any }) => (
-    <View style={styles.bankItemContainer}>
-      <View style={styles.bankHeader}>
+    <ThemedView style={[styles.bankItemCard, { backgroundColor: currentColors.cardBackground, marginTop: 12, }]}>
+      <View style={styles.bankItemHeader}>
         {item.institution.logo ? (
           <Image
             source={{ uri: `data:image/png;base64,${item.institution.logo}` }}
-            style={styles.bankLogo}
+            style={styles.bankItemLogo}
           />
         ) : (
           <MaterialCommunityIcons
             name="bank-outline"
             size={32}
-            color="#666"
-            style={styles.bankLogo}
+            color={currentColors.icon}
+            style={styles.bankItemLogo}
           />
         )}
-        <View style={styles.bankInfo}>
-          <ThemedText style={styles.institutionName}>{item.institution.name}</ThemedText>
-          <ThemedText style={styles.lastSyncText}>
-            Last sync: {item.last_sync ? new Date(item.last_sync).toLocaleDateString() : 'N/A'}
+        <View style={styles.bankItemInfo}>
+          <ThemedText style={styles.bankItemInstitutionName}>{item.institution.name}</ThemedText>
+          <ThemedText style={styles.bankItemLastSyncText}>
+            <MaterialCommunityIcons name="update" size={12} color={currentColors.icon} /> Last sync: {item.last_sync ? new Date(item.last_sync).toLocaleDateString() : 'N/A'}
           </ThemedText>
         </View>
-        <Button
-          onPress={() => handleVerifyForBank(item.itemId, item.institution.name)}
-          title="Verify"
-          isLoading={isVerifying && selectedItemId === item.itemId}
-          disabled={isVerifying}
-          style={styles.verifyButton}
-        />
       </View>
       {item.accounts && item.accounts.length > 0 && (
         <View style={styles.accountsContainer}>
           {item.accounts.map((account: any) => (
-            <View key={account.account_id} style={styles.accountItem}>
-              <ThemedText style={styles.accountName}>{account.name}</ThemedText>
-              <View style={styles.accountDetails}>
-                <ThemedText style={styles.accountSubtype}>{account.subtype}</ThemedText>
-                <ThemedText style={styles.accountMask}>•••• {account.mask}</ThemedText>
+            <View key={account.account_id} style={styles.bankItemAccountItem}>
+              <ThemedText style={styles.bankItemAccountName}>{account.name}</ThemedText>
+              <View style={styles.bankItemAccountDetails}>
+                <ThemedText style={styles.bankItemAccountSubtype}>{account.subtype}</ThemedText>
+                <ThemedText style={styles.bankItemAccountMask}>•••• {account.mask}</ThemedText>
               </View>
             </View>
           ))}
         </View>
       )}
-    </View>
+      <Button
+        onPress={() => handleVerifyForBank(item.itemId, item.institution.name)}
+        title="Report"
+        isLoading={isVerifying && selectedItemId === item.itemId}
+        disabled={isVerifying}
+        style={[styles.verifyButton, { marginTop: 15 }]} // Added marginTop for spacing
+        icon={<MaterialCommunityIcons name="file-chart-outline" size={24} color="#fff" />}
+      />
+    </ThemedView>
   );
 
-  const isBusy = isVerifying;
-
   return (
-    <>
-      <ThemedView style={styles.container}>
-        <View style={styles.bankListContainer}>
-          {isFetchingBanks && <ActivityIndicator size="large" color="#0000ff" />}
+    <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}>
+      <LinearGradient colors={gradientColors} style={styles.gradient}>
+        <View style={styles.header}>
+          <ThemedText type="title" style={styles.headerTitle}>My Banks</ThemedText>
+          <ThemedText type="subtitle" style={styles.headerSubtitle}>Manage your connected financial institutions</ThemedText>
+        </View>
 
-          {!isFetchingBanks && (
+        <View style={styles.bankListContainer}>
+          {isFetchingBanks ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={currentColors.tint} />
+              <ThemedText style={{ marginTop: 10 }}>Loading Banks...</ThemedText>
+            </View>
+          ) : (
             <FlatList
               data={connectedBanks}
               renderItem={renderBankItem}
               keyExtractor={(item) => item.itemId}
+              contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12 }} // Added paddingTop
               ListEmptyComponent={() => (
                 <View style={styles.emptyListContainer}>
-                  <ThemedText>No banks connected yet.</ThemedText>
+                  <MaterialCommunityIcons name="bank-plus" size={50} color={currentColors.icon} />
+                  <ThemedText style={styles.emptyListText}>No banks connected yet.</ThemedText>
+                  <ThemedText style={{ opacity: 0.7, textAlign: 'center', marginTop: 5 }}>Tap &quot;Add Bank&quot; to get started.</ThemedText>
                 </View>
               )}
             />
           )}
         </View>
 
-        <View style={styles.buttonContainer}>
+        <View style={[styles.buttonContainer, { marginTop: 10 }]}>
           <Button
             onPress={handleAddBank}
             title="Add Bank"
-            style={{ flex: 1 }}
-          />
+            style={[styles.addBankButton, { backgroundColor: currentColors.tint }]}
+            textStyle={styles.addBankButtonText}
+            icon={<MaterialCommunityIcons name="plus-circle-outline" size={24} color="#fff" />} />
         </View>
-      </ThemedView>
-      <InputModal
-        visible={isModalVisible}
-        onClose={() => {
-          setModalVisible(false);
-          setSelectedItemId(null);
-          setSelectedBankName('');
-        }}
-        onSubmit={handleVerifyAmount}
-        title={`Verify Balance - ${selectedBankName}`}
-        inputLabel="Amount to Verify"
-        submitButtonText="Verify"
-        isLoading={isVerifying}
-      />
-    </>
+
+        <InputModal
+          visible={isModalVisible}
+          onClose={() => {
+            setModalVisible(false);
+            setSelectedItemId(null);
+            setSelectedBankName('');
+          }}
+          onSubmit={handleVerifyAmount}
+          title={`Verify Balance - ${selectedBankName}`}
+          inputLabel="Amount to Verify"
+          submitButtonText="Verify"
+          isLoading={isVerifying}
+        />
+      </LinearGradient>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  gradient: {
     flex: 1,
   },
-  container: {
+  header: {
+    paddingTop: 30, // Adjust for status bar
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    marginTop: 4,
+    opacity: 0.8,
+  },
+  bankListContainer: {
     flex: 1,
-    padding: 16,
-    gap: 16,
   },
-  bankItemContainer: {
-    padding: 16,
-    marginBottom: 8,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 8,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  bankHeader: {
+  bankItemCard: {
+    padding: 20,
+    marginBottom: 12,
+    borderRadius: 15,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 5 },
+    shadowRadius: 15,
+    elevation: 5, // Android shadow
+  },
+  bankItemHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 15,
     justifyContent: 'space-between',
   },
-  bankInfo: {
+  bankItemInfo: {
     flex: 1,
-    marginRight: 12,
+    marginRight: 15,
   },
-  verifyButton: {
-    minWidth: 80,
-    height: 36,
-    paddingHorizontal: 12,
-  },
-  institutionName: {
+  bankItemInstitutionName: {
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 18,
   },
-  lastSyncText: {
-    fontSize: 12,
-    color: '#666',
+  bankItemLastSyncText: {
+    fontSize: 13,
+    opacity: 0.7,
+    marginTop: 2,
   },
-  accountsContainer: {},
-  accountItem: {
+  bankItemLogo: {
+    width: 45,
+    height: 45,
+    marginRight: 15,
+    resizeMode: 'contain',
+  },
+  accountsContainer: {
+    marginTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.1)', // Subtle separator
+    paddingTop: 10,
+  },
+  bankItemAccountItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    marginLeft: 56, // Aligns with the institution name
   },
-  accountName: {
+  bankItemAccountName: {
     fontWeight: '500',
+    fontSize: 15,
   },
-  accountDetails: {
+  bankItemAccountDetails: {
     alignItems: 'flex-end',
   },
-  accountSubtype: {
+  bankItemAccountSubtype: {
     textTransform: 'capitalize',
-    color: '#666',
+    fontSize: 13,
+    opacity: 0.7,
   },
-  accountMask: {
-    color: '#666',
+  bankItemAccountMask: {
+    fontSize: 13,
+    opacity: 0.7,
   },
-  bankLogo: {
-    width: 40,
+  verifyButton: {
+    minWidth: 90,
     height: 40,
-    marginRight: 16,
-    resizeMode: 'contain',
+    paddingHorizontal: 15,
+    borderRadius: 10,
+    alignSelf: 'flex-end',
   },
   emptyListContainer: {
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 50,
+    paddingHorizontal: 20,
+  },
+  emptyListText: {
+    marginTop: 15,
+    fontSize: 16,
+    textAlign: 'center',
   },
   buttonContainer: {
-    gap: 8,
-    flexDirection: 'row',
+    paddingHorizontal: 16,
   },
-  bankListContainer: {
-    flex: 1,
+  addBankButton: {
+    height: 55,
+    borderRadius: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 5 },
+    shadowRadius: 15,
+    elevation: 5,
+    width: '80%',
+    alignSelf: 'center',
+  },
+  addBankButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });

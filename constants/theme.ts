@@ -12,6 +12,8 @@ export const Colors = {
   light: {
     text: '#11181C',
     background: '#fff',
+    cardBackground: '#f8f8f8', // Slightly off-white for card
+    inputBackground: '#fff', // White for input fields
     tint: tintColorLight,
     icon: '#687076',
     tabIconDefault: '#687076',
@@ -20,6 +22,8 @@ export const Colors = {
   dark: {
     text: '#ECEDEE',
     background: '#151718',
+    cardBackground: '#1e2124', // Slightly lighter dark for card
+    inputBackground: '#151718', // Dark for input fields
     tint: tintColorDark,
     icon: '#9BA1A6',
     tabIconDefault: '#9BA1A6',

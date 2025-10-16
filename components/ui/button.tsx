@@ -6,6 +6,8 @@ import {
   ActivityIndicator,
   ViewStyle,
   TextStyle,
+  StyleProp,
+  View,
 } from 'react-native';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
@@ -15,9 +17,10 @@ interface ButtonProps {
   title: string;
   disabled?: boolean;
   isLoading?: boolean;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   textStyle?: TextStyle;
   color?: string;
+  icon?: React.ReactNode;
 }
 
 const Button: React.FC<ButtonProps> = ({
@@ -28,6 +31,7 @@ const Button: React.FC<ButtonProps> = ({
   style,
   textStyle,
   color,
+  icon,
 }) => {
   const colorScheme = useColorScheme();
   const currentColors = Colors[colorScheme ?? 'light'];
@@ -49,7 +53,10 @@ const Button: React.FC<ButtonProps> = ({
       {isLoading ? (
         <ActivityIndicator size="small" color={activityIndicatorColor} />
       ) : (
-        <Text style={[styles.buttonText, { color: textColor }, textStyle]}>{title}</Text>
+        <>
+          {icon && <View style={styles.iconContainer}>{icon}</View>}
+          <Text style={[styles.buttonText, { color: textColor }, textStyle]}>{title}</Text>
+        </>
       )}
     </TouchableOpacity>
   );
@@ -67,10 +74,14 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     shadowRadius: 4,
     elevation: 3,
+    flexDirection: 'row',
   },
   buttonText: {
     fontWeight: '600',
     fontSize: 16,
+  },
+  iconContainer: {
+    marginRight: 8,
   },
 });
 

@@ -1,10 +1,12 @@
 import { useAuth } from '@/hooks/useAuth';
 import React, { useState } from 'react';
-import { View, TextInput, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, TextInput, Text, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import Button from '@/components/ui/button';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { myColors } from '@/constants/my-constants';
 
 export default function SignUp() {
   const [email, setEmail] = useState('');
@@ -13,8 +15,9 @@ export default function SignUp() {
   const [name, setName] = useState('');
   const { signUp, isAuthenticating } = useAuth();
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const currentColors = Colors[colorScheme ?? 'light'];
+  const currentColors = Colors['light'];
+
+  const gradientColors: readonly [string, string, ...string[]] = [myColors.gradient1, myColors.gradient2]; // soft light gradient
 
   const handleSignUp = () => {
     if (password !== confirmPassword) {
@@ -29,94 +32,151 @@ export default function SignUp() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: currentColors.background }]}>
-      <Text style={[styles.title, { color: currentColors.text }]}>Sign Up</Text>
-
-      <TextInput
-        style={[styles.input, { borderColor: currentColors.icon, color: currentColors.text, backgroundColor: currentColors.background }]}
-        placeholder="Name"
-        placeholderTextColor={currentColors.icon}
-        value={name}
-        onChangeText={setName}
-        autoCapitalize="words"
-      />
-
-      <TextInput
-        style={[styles.input, { borderColor: currentColors.icon, color: currentColors.text, backgroundColor: currentColors.background }]}
-        placeholder="Email"
-        placeholderTextColor={currentColors.icon}
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
-
-      <TextInput
-        style={[styles.input, { borderColor: currentColors.icon, color: currentColors.text, backgroundColor: currentColors.background }]}
-        placeholder="Password"
-        placeholderTextColor={currentColors.icon}
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-
-      <TextInput
-        style={[styles.input, { borderColor: currentColors.icon, color: currentColors.text, backgroundColor: currentColors.background }]}
-        placeholder="Confirm Password"
-        placeholderTextColor={currentColors.icon}
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
-        secureTextEntry
-      />
-
-      <Button
-        title="Sign Up"
-        onPress={handleSignUp}
-        isLoading={isAuthenticating}
-        textStyle={{ fontSize: 18, fontWeight: 'bold' }}
-      />
-
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => router.back()}
+    <LinearGradient
+      colors={gradientColors}
+      style={styles.gradient}
+    >
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <Text style={[styles.backText, { color: currentColors.tint }]}>Back to Login</Text>
-      </TouchableOpacity>
-    </View>
+        <View style={styles.header}>
+          <Image source={require('@/assets/images/pur.png')} style={styles.logo} />
+          <Text style={[styles.title, { color: currentColors.text }]}>Create Account</Text>
+          <Text style={[styles.subtitle, { color: currentColors.text }]}>Sign up to get started</Text>
+        </View>
+
+        <View style={[styles.card, { backgroundColor: currentColors.cardBackground }]}>
+          <View style={[styles.inputContainer, { borderColor: currentColors.icon, backgroundColor: currentColors.inputBackground }]}>
+            <MaterialCommunityIcons name="account-outline" size={24} color={currentColors.icon} style={styles.icon} />
+            <TextInput
+              style={[styles.input, { color: currentColors.text }]}
+              placeholder="Name"
+              placeholderTextColor={currentColors.icon}
+              value={name}
+              onChangeText={setName}
+              autoCapitalize="words"
+            />
+          </View>
+
+          <View style={[styles.inputContainer, { borderColor: currentColors.icon, backgroundColor: currentColors.inputBackground }]}>
+            <MaterialCommunityIcons name="email-outline" size={24} color={currentColors.icon} style={styles.icon} />
+            <TextInput
+              style={[styles.input, { color: currentColors.text }]}
+              placeholder="Email"
+              placeholderTextColor={currentColors.icon}
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+          </View>
+
+          <View style={[styles.inputContainer, { borderColor: currentColors.icon, backgroundColor: currentColors.inputBackground }]}>
+            <MaterialCommunityIcons name="lock-outline" size={24} color={currentColors.icon} style={styles.icon} />
+            <TextInput
+              style={[styles.input, { color: currentColors.text }]}
+              placeholder="Password"
+              placeholderTextColor={currentColors.icon}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+            />
+          </View>
+
+          <View style={[styles.inputContainer, { borderColor: currentColors.icon, backgroundColor: currentColors.inputBackground }]}>
+            <MaterialCommunityIcons name="lock-check-outline" size={24} color={currentColors.icon} style={styles.icon} />
+            <TextInput
+              style={[styles.input, { color: currentColors.text }]}
+              placeholder="Confirm Password"
+              placeholderTextColor={currentColors.icon}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+            />
+          </View>
+
+          <Button
+            title="Sign Up"
+            onPress={handleSignUp}
+            isLoading={isAuthenticating}
+            textStyle={{ fontSize: 18, fontWeight: 'bold' }}
+          />
+
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <Text style={[styles.backText, { color: currentColors.tint }]}>Back to Login</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
+  gradient: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     justifyContent: 'center',
-    padding: 20,
+    padding: 12,
+  },
+  header: {
+    marginBottom: 40,
+    alignItems: 'center',
+  },
+  logo: {
+    width: 120,
+    height: 120,
+    marginBottom: 20,
+    resizeMode: 'contain',
   },
   title: {
-    fontSize: 28,
+    fontSize: 36,
     fontWeight: 'bold',
+  },
+  subtitle: {
+    fontSize: 18,
+    marginTop: 8,
     textAlign: 'center',
-    marginBottom: 32,
+    opacity: 0.7,
+  },
+  card: {
+    borderRadius: 20,
+    padding: 20,
+    marginHorizontal: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 10 },
+    shadowRadius: 20,
+    elevation: 8, // Android shadow
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 55,
+    borderWidth: 1,
+    borderRadius: 15,
+    marginBottom: 18,
+    paddingHorizontal: 18,
+  },
+  icon: {
+    marginRight: 12,
   },
   input: {
-    height: 50,
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    fontSize: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2, // Android shadow
+    flex: 1,
+    fontSize: 17,
   },
   backButton: {
-    marginTop: 12,
+    marginTop: 25,
     justifyContent: 'center',
     alignItems: 'center',
   },
   backText: {
-    fontSize: 16,
+    fontSize: 15,
+    fontWeight: '500',
   },
 });
