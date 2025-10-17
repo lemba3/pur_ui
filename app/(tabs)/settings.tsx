@@ -2,9 +2,7 @@ import { StyleSheet, View, TouchableOpacity, Text } from 'react-native';
 import { useAuth } from '@/hooks/useAuth';
 import { Colors } from '@/constants/theme';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { ComponentProps } from 'react';
-import { myColors } from '@/constants/my-constants';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type IconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
@@ -17,9 +15,6 @@ interface SettingButton {
 
 export default function SettingsScreen() {
   const { signOut } = useAuth();
-  const currentColors = Colors['light'];
-
-  const gradientColors: readonly [string, string, ...string[]] = [myColors.gradient1, myColors.gradient2]; // soft light gradient
 
   const myButtons: SettingButton[] = [
     { title: 'Profile', icon: 'account-outline', onPress: () => { /* Navigate to profile screen */ } },
@@ -28,43 +23,44 @@ export default function SettingsScreen() {
   ];
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}>
-      <LinearGradient colors={gradientColors} style={styles.gradient}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.dark.background }} edges={['top', 'left', 'right']}>
+      <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={[styles.headerTitle, { color: currentColors.text }]}>Settings</Text>
+          <Text style={styles.headerTitle}>Settings</Text>
         </View>
 
         <View style={styles.section}>
           {myButtons.map((btn, index) => (
             <TouchableOpacity
               key={index}
-              style={[styles.settingButton, { backgroundColor: currentColors.cardBackground }]}
+              style={styles.settingButton}
               onPress={btn.onPress}
             >
-              <MaterialCommunityIcons name={btn.icon} size={24} color={currentColors.icon} style={styles.settingButtonIcon} />
-              <Text style={[styles.settingButtonText, { color: currentColors.text }]}>{btn.title}</Text>
-              <MaterialCommunityIcons name="chevron-right" size={24} color={currentColors.icon} />
+              <MaterialCommunityIcons name={btn.icon} size={24} color={Colors.dark.icon} style={styles.settingButtonIcon} />
+              <Text style={styles.settingButtonText}>{btn.title}</Text>
+              <MaterialCommunityIcons name="chevron-right" size={24} color={Colors.dark.icon} />
             </TouchableOpacity>
           ))}
         </View>
 
         <View style={styles.signOutSection}>
           <TouchableOpacity
-            style={[styles.signOutButton, { backgroundColor: '#dc3545' }]} // Red color for sign out
+            style={styles.signOutButton}
             onPress={signOut}
           >
             <MaterialCommunityIcons name="logout" size={24} color="#fff" style={styles.settingButtonIcon} />
             <Text style={styles.signOutButtonText}>Sign Out</Text>
           </TouchableOpacity>
         </View>
-      </LinearGradient>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  gradient: {
+  container: {
     flex: 1,
+    backgroundColor: Colors.dark.background,
   },
   header: {
     paddingTop: 30, // Adjust for status bar
@@ -75,6 +71,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
+    color: Colors.dark.text,
   },
   section: {
     marginTop: 20,
@@ -86,11 +83,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 15,
     borderRadius: 15,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 5 },
-    shadowRadius: 10,
-    elevation: 5, // Android shadow
+    backgroundColor: Colors.dark.cardBackground,
   },
   settingButtonIcon: {
     marginRight: 15,
@@ -99,6 +92,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     fontWeight: '500',
+    color: Colors.dark.cardText,
   },
   signOutSection: {
     marginTop: 'auto',
@@ -111,11 +105,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 15,
     borderRadius: 15,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 5 },
-    shadowRadius: 10,
-    elevation: 5, // Android shadow
+    backgroundColor: Colors.dark.error,
   },
   signOutButtonText: {
     color: '#fff',

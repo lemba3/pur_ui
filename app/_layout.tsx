@@ -43,7 +43,8 @@ function RootLayoutNav() {
   const { session, isLoading } = useAuth();
   const router = useRouter();
   const segments = useSegments();
-  const colorScheme = useColorScheme();
+  const colorScheme = 'dark';
+  // const colorScheme = useColorScheme();
   // const colorScheme = 'dark';
 
   useEffect(() => {

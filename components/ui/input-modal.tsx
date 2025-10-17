@@ -25,7 +25,6 @@ export default function InputModal({
   isLoading = false,
 }: InputModalProps) {
   const [inputValue, setInputValue] = useState('');
-  const currentColors = Colors['light'];
 
   // Reset state when modal closes
   useEffect(() => {
@@ -52,39 +51,35 @@ export default function InputModal({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.centeredView}
       >
-        <ThemedView style={[styles.modalView, { backgroundColor: currentColors.cardBackground }]}>
-          <ThemedText type="subtitle" style={{ color: currentColors.text, fontSize: 22, fontWeight: 'bold', marginBottom: 15 }}>{title}</ThemedText>
-
-          {inputLabel && <ThemedText style={[styles.inputLabel, { color: currentColors.text }]}>{inputLabel}</ThemedText>}
+        <ThemedView style={styles.modalView}>
+          <ThemedText type="subtitle" style={{ color: Colors.dark.cardText, fontSize: 22, fontWeight: 'bold', marginBottom: 15 }}>{title}</ThemedText>
+          {inputLabel && <ThemedText style={styles.inputLabel}>{inputLabel}</ThemedText>}
           <TextInput
-            style={[styles.input, {
-              borderColor: currentColors.icon,
-              color: currentColors.text,
-              backgroundColor: currentColors.inputBackground,
-            }]}
+            style={styles.input}
             keyboardType="numeric"
             onChangeText={setInputValue}
             value={inputValue}
             placeholder="e.g., 100.00"
-            placeholderTextColor={currentColors.icon}
+            placeholderTextColor={Colors.dark.icon}
             editable={!isLoading}
           />
-          {isLoading && <ActivityIndicator size="large" color={currentColors.tint} style={styles.activityIndicator} />}
+          {isLoading && <ActivityIndicator size="large" color={Colors.dark.tint} style={styles.activityIndicator} />}
           <View style={styles.buttonContainer}>
             <Button
               title="Cancel"
               onPress={onClose}
-              color={currentColors.icon} // Neutral color for cancel
+              color={Colors.dark.icon} // Neutral color for cancel
               disabled={isLoading}
-              style={{ flex: 1 }}
+              style={{ flex: 1, backgroundColor: Colors.dark.error, borderWidth: 1, borderColor: Colors.dark.icon }}
+              textStyle={{ color: Colors.dark.text }}
             />
             <Button
               title={submitButtonText}
               onPress={handleSubmit}
-              color={currentColors.tint} // Themed color for submit
+              color={Colors.dark.tint} // Themed color for submit
               disabled={isLoading || !inputValue}
-              textStyle={{ color: '#fff' }}
-              style={{ flex: 1 }}
+              textStyle={{ color: Colors.dark.text }}
+              style={{ flex: 1, backgroundColor: Colors.dark.tint }}
             />
           </View>
         </ThemedView>
@@ -114,6 +109,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 8,
     width: '85%',
+    backgroundColor: Colors.dark.cardBackground,
   },
   inputLabel: {
     alignSelf: 'flex-start',
@@ -121,6 +117,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontWeight: '600',
     fontSize: 16,
+    color: Colors.dark.cardText,
   },
   input: {
     height: 50,
@@ -130,6 +127,9 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 10,
     fontSize: 16,
+    borderColor: Colors.dark.icon,
+    color: Colors.dark.cardText,
+    backgroundColor: Colors.dark.inputBackground,
   },
   buttonContainer: {
     flexDirection: 'row',

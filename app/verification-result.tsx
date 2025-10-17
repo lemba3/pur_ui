@@ -277,7 +277,6 @@ const generateReportHtml = (data: any) => {
     <View style={styles.pageContainer}>
       <ScrollView style={styles.page}>
         <Stack.Screen options={{ title: 'Bank Balance Verification Report' }} />
-
         {/* Single unified card */}
         <View style={styles.card}>
           {/* Header */}

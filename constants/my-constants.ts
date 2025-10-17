@@ -3,6 +3,6 @@ export const EXPO_PUBLIC_PUSHER_KEY = process.env.EXPO_PUBLIC_PUSHER_KEY;
 export const EXPO_PUBLIC_PUSHER_CLUSTER = process.env.EXPO_PUBLIC_PUSHER_CLUSTER;
 
 export const myColors = {
-  gradient1: '#f5f7fa',
-  gradient2: '#c3cfe2',
+  gradient1: '#0D1B3A',
+  gradient2: '#000000',
 }

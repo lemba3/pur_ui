@@ -12,9 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useConnectedBanks, useInvalidateBanks } from '@/hooks/bank';
 import { useGenerateReport } from '@/hooks/report';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Colors } from '@/constants/theme';
-import { myColors } from '@/constants/my-constants';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
@@ -27,9 +25,6 @@ export default function HomeScreen() {
   const [selectedBankName, setSelectedBankName] = useState<string>('');
 
   const { session, isLoading: isAuthLoading } = useAuth();
-  const currentColors = Colors['light'];
-
-  const gradientColors: readonly [string, string, ...string[]] = [myColors.gradient1, myColors.gradient2]; // soft light gradient
 
   useEffect(() => {
     console.log('[Debug] Component effect running, auth loading:', isAuthLoading, 'has session:', !!session);
@@ -117,7 +112,7 @@ export default function HomeScreen() {
   }, []);
 
   const renderBankItem = ({ item }: { item: any }) => (
-    <ThemedView style={[styles.bankItemCard, { backgroundColor: currentColors.cardBackground, marginTop: 12, }]}>
+    <ThemedView style={styles.bankItemCard}>
       <View style={styles.bankItemHeader}>
         {item.institution.logo ? (
           <Image
@@ -128,14 +123,14 @@ export default function HomeScreen() {
           <MaterialCommunityIcons
             name="bank-outline"
             size={32}
-            color={currentColors.icon}
+            color={Colors.dark.icon}
             style={styles.bankItemLogo}
           />
         )}
         <View style={styles.bankItemInfo}>
           <ThemedText style={styles.bankItemInstitutionName}>{item.institution.name}</ThemedText>
           <ThemedText style={styles.bankItemLastSyncText}>
-            <MaterialCommunityIcons name="update" size={12} color={currentColors.icon} /> Last sync: {item.last_sync ? new Date(item.last_sync).toLocaleDateString() : 'N/A'}
+            <MaterialCommunityIcons name="update" size={12} color={Colors.dark.icon} /> Last sync: {item.last_sync ? new Date(item.last_sync).toLocaleDateString() : 'N/A'}
           </ThemedText>
         </View>
       </View>
@@ -157,15 +152,15 @@ export default function HomeScreen() {
         title="Report"
         isLoading={isVerifying && selectedItemId === item.itemId}
         disabled={isVerifying}
-        style={[styles.verifyButton, { marginTop: 15 }]} // Added marginTop for spacing
+        style={[styles.verifyButton, { marginTop: 15, backgroundColor: Colors.dark.tint }]} // Added marginTop for spacing
         icon={<MaterialCommunityIcons name="file-chart-outline" size={24} color="#fff" />}
       />
     </ThemedView>
   );
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={['top', 'left', 'right']}>
-      <LinearGradient colors={gradientColors} style={styles.gradient}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.dark.background }} edges={['top', 'left', 'right']}>
+      <View style={styles.container}>
         <View style={styles.header}>
           <ThemedText type="title" style={styles.headerTitle}>My Banks</ThemedText>
           <ThemedText type="subtitle" style={styles.headerSubtitle}>Manage your connected financial institutions</ThemedText>
@@ -174,8 +169,8 @@ export default function HomeScreen() {
         <View style={styles.bankListContainer}>
           {isFetchingBanks ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={currentColors.tint} />
-              <ThemedText style={{ marginTop: 10 }}>Loading Banks...</ThemedText>
+              <ActivityIndicator size="large" color={Colors.dark.tint} />
+              <ThemedText style={{ marginTop: 10, color: Colors.dark.text }}>Loading Banks...</ThemedText>
             </View>
           ) : (
             <FlatList
@@ -185,9 +180,9 @@ export default function HomeScreen() {
               contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12 }} // Added paddingTop
               ListEmptyComponent={() => (
                 <View style={styles.emptyListContainer}>
-                  <MaterialCommunityIcons name="bank-plus" size={50} color={currentColors.icon} />
+                  <MaterialCommunityIcons name="bank-plus" size={50} color={Colors.dark.icon} />
                   <ThemedText style={styles.emptyListText}>No banks connected yet.</ThemedText>
-                  <ThemedText style={{ opacity: 0.7, textAlign: 'center', marginTop: 5 }}>Tap &quot;Add Bank&quot; to get started.</ThemedText>
+                  <ThemedText style={{ opacity: 0.7, textAlign: 'center', marginTop: 5, color: Colors.dark.text }}>Tap &quot;Add Bank&quot; to get started.</ThemedText>
                 </View>
               )}
             />
@@ -198,7 +193,7 @@ export default function HomeScreen() {
           <Button
             onPress={handleAddBank}
             title="Add Bank"
-            style={[styles.addBankButton, { backgroundColor: currentColors.tint }]}
+            style={[styles.addBankButton, { backgroundColor: Colors.dark.tint }]}
             textStyle={styles.addBankButtonText}
             icon={<MaterialCommunityIcons name="plus-circle-outline" size={24} color="#fff" />} />
         </View>
@@ -212,18 +207,19 @@ export default function HomeScreen() {
           }}
           onSubmit={handleVerifyAmount}
           title={`Verify Balance - ${selectedBankName}`}
-          inputLabel="Amount to Verify"
+          inputLabel="Enter Amt ($)"
           submitButtonText="Verify"
           isLoading={isVerifying}
         />
-      </LinearGradient>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  gradient: {
+  container: {
     flex: 1,
+    backgroundColor: Colors.dark.background,
   },
   header: {
     paddingTop: 30, // Adjust for status bar
@@ -234,11 +230,13 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontWeight: 'bold',
+    color: Colors.dark.text,
   },
   headerSubtitle: {
     fontSize: 16,
     marginTop: 4,
     opacity: 0.8,
+    color: Colors.dark.text,
   },
   bankListContainer: {
     flex: 1,
@@ -252,11 +250,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 12,
     borderRadius: 15,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 5 },
-    shadowRadius: 15,
-    elevation: 5, // Android shadow
+    backgroundColor: Colors.dark.cardBackground,
   },
   bankItemHeader: {
     flexDirection: 'row',
@@ -271,11 +265,13 @@ const styles = StyleSheet.create({
   bankItemInstitutionName: {
     fontWeight: 'bold',
     fontSize: 18,
+    color: Colors.dark.cardText,
   },
   bankItemLastSyncText: {
     fontSize: 13,
     opacity: 0.7,
     marginTop: 2,
+    color: Colors.dark.cardText,
   },
   bankItemLogo: {
     width: 45,
@@ -284,10 +280,8 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   accountsContainer: {
-    marginTop: 10,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.1)', // Subtle separator
-    paddingTop: 10,
+    borderTopColor: 'rgba(255,255,255,0.1)', // Subtle separator
   },
   bankItemAccountItem: {
     flexDirection: 'row',
@@ -298,6 +292,7 @@ const styles = StyleSheet.create({
   bankItemAccountName: {
     fontWeight: '500',
     fontSize: 15,
+    color: Colors.dark.cardText,
   },
   bankItemAccountDetails: {
     alignItems: 'flex-end',
@@ -306,10 +301,12 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
     fontSize: 13,
     opacity: 0.7,
+    color: Colors.dark.cardText,
   },
   bankItemAccountMask: {
     fontSize: 13,
     opacity: 0.7,
+    color: Colors.dark.cardText,
   },
   verifyButton: {
     minWidth: 90,
@@ -327,6 +324,7 @@ const styles = StyleSheet.create({
     marginTop: 15,
     fontSize: 16,
     textAlign: 'center',
+    color: Colors.dark.text,
   },
   buttonContainer: {
     paddingHorizontal: 16,
@@ -338,11 +336,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 5 },
-    shadowRadius: 15,
-    elevation: 5,
     width: '80%',
     alignSelf: 'center',
   },
