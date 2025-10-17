@@ -7,6 +7,8 @@ import { useAuth } from '@/hooks/useAuth';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { useGetReport } from '@/hooks/report'; // Import the renamed hook
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Colors } from '@/constants/theme';
 
 interface AccountDetails {
   plaidAccountId: string;
@@ -274,152 +276,154 @@ const generateReportHtml = (data: any) => {
   }
 
   return (
-    <View style={styles.pageContainer}>
-      <ScrollView style={styles.page}>
-        <Stack.Screen options={{ title: 'Bank Balance Verification Report' }} />
-        {/* Single unified card */}
-        <View style={styles.card}>
-          {/* Header */}
-          <View style={styles.header}>
-            <ThemedText style={styles.headerTitle}>Bank Balance Verification Report</ThemedText>
-            <ThemedText style={styles.headerSubtitle}>
-              Official verification document generated on {new Date().toLocaleDateString("en-US")}
-            </ThemedText>
-          </View>
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.dark.background }} edges={['top', 'left', 'right']}>
+      <View style={styles.pageContainer}>
+        <ScrollView style={styles.page}>
+          <Stack.Screen options={{ title: 'Bank Balance Verification Report' }} />
+          {/* Single unified card */}
+          <View style={styles.card}>
+            {/* Header */}
+            <View style={styles.header}>
+              <ThemedText style={styles.headerTitle}>Bank Balance Verification Report</ThemedText>
+              <ThemedText style={styles.headerSubtitle}>
+                Official verification document generated on {new Date().toLocaleDateString("en-US")}
+              </ThemedText>
+            </View>
 
-          <View style={styles.divider} />
+            <View style={styles.divider} />
 
-          {/* Status Badge */}
-          <View style={[styles.badge, { backgroundColor: sufficient ? '#10B981' : '#EF4444' }]}>
-            <ThemedText style={styles.badgeText}>
-              {sufficient ? '✓ VERIFIED' : '✕ INSUFFICIENT'}
-            </ThemedText>
-          </View>
+            {/* Status Badge */}
+            <View style={[styles.badge, { backgroundColor: sufficient ? '#10B981' : '#EF4444' }]}>
+              <ThemedText style={styles.badgeText}>
+                {sufficient ? '✓ VERIFIED' : '✕ INSUFFICIENT'}
+              </ThemedText>
+            </View>
 
-          {/* Summary Section */}
-          <View
-            style={[
-              styles.amountHighlight,
-              { borderLeftColor: sufficient ? '#10B981' : '#EF4444' },
-            ]}
-          >
-            <Ionicons
-              name={sufficient ? 'checkmark-circle' : 'alert-circle'}
-              size={28}
-              color={sufficient ? '#10B981' : '#EF4444'}
-              style={{ marginBottom: 6 }}
-            />
-            <ThemedText
+            {/* Summary Section */}
+            <View
               style={[
-                styles.amountLabel,
-                { color: sufficient ? '#10B981' : '#EF4444' },
+                styles.amountHighlight,
+                { borderLeftColor: sufficient ? '#10B981' : '#EF4444' },
               ]}
             >
-              Verification Amount
-            </ThemedText>
+              <Ionicons
+                name={sufficient ? 'checkmark-circle' : 'alert-circle'}
+                size={28}
+                color={sufficient ? '#10B981' : '#EF4444'}
+                style={{ marginBottom: 6 }}
+              />
+              <ThemedText
+                style={[
+                  styles.amountLabel,
+                  { color: sufficient ? '#10B981' : '#EF4444' },
+                ]}
+              >
+                Verification Amount
+              </ThemedText>
 
-            <ThemedText style={styles.amountText}>
-              {formatCurrency(requestedAmount)}
-            </ThemedText>
+              <ThemedText style={styles.amountText}>
+                {formatCurrency(requestedAmount)}
+              </ThemedText>
 
-            <ThemedText style={styles.amountSub}>
-              As of {new Date().toLocaleDateString("en-US")}
-            </ThemedText>
-          </View>
-
-          {/* Account Holder Information Section */}
-          <ThemedText style={styles.sectionHeader}>Account Holder Information</ThemedText>
-          <View style={styles.accountBox}>
-            <View style={styles.accountRow}>
-              <ThemedText style={styles.infoLabel}>Account Holder Name</ThemedText>
-              <ThemedText style={styles.infoValue}>{userName}</ThemedText>
+              <ThemedText style={styles.amountSub}>
+                As of {new Date().toLocaleDateString("en-US")}
+              </ThemedText>
             </View>
-          </View>
 
-          {/* Connected Accounts Section */}
-          <ThemedText style={styles.sectionHeader}>
-            Connected Account{accounts.length !== 1 ? 's' : ''} ({accounts.length})
-          </ThemedText>
-          {accounts.length === 0 ? (
-            <ThemedText style={styles.emptyText}>No Account data available.</ThemedText>
-          ) : (
-            accounts.map((acc: any, index: number) => (
-              <View key={acc.plaidAccountId} style={[styles.accountBox, index > 0 && { marginTop: 12 }]}>
-                <View style={styles.accountHeaderRow}>
-                  <ThemedText style={styles.accountHeaderText}>Account {index + 1}</ThemedText>
-                </View>
-                <View style={styles.accountRow}>
-                  <ThemedText style={styles.infoLabel}>Bank Account Name</ThemedText>
-                  <ThemedText style={styles.infoValue}>{acc.name || '-'}</ThemedText>
-                </View>
-                <View style={styles.accountRow}>
-                  <ThemedText style={styles.infoLabel}>Bank</ThemedText>
-                  <ThemedText style={styles.infoValue}>{acc.bankName || '-'}</ThemedText>
-                </View>
-                <View style={styles.accountRow}>
-                  <ThemedText style={styles.infoLabel}>Account Type</ThemedText>
-                  <ThemedText style={styles.infoValue}>{acc.type || '-'}</ThemedText>
-                </View>
-                <View style={styles.accountRow}>
-                  <ThemedText style={styles.infoLabel}>Subtype</ThemedText>
-                  <ThemedText style={styles.infoValue}>{acc.subtype || '-'}</ThemedText>
-                </View>
-                <View style={[styles.accountRow, { borderBottomWidth: 0 }]}>
-                  <ThemedText style={styles.infoLabel}>Account Number (Last 4)</ThemedText>
-                  <ThemedText style={styles.infoValue}>•••• {acc.maskedNumber || '-'}</ThemedText>
-                </View>
+            {/* Account Holder Information Section */}
+            <ThemedText style={styles.sectionHeader}>Account Holder Information</ThemedText>
+            <View style={styles.accountBox}>
+              <View style={styles.accountRow}>
+                <ThemedText style={styles.infoLabel}>Account Holder Name</ThemedText>
+                <ThemedText style={styles.infoValue}>{userName}</ThemedText>
               </View>
-            ))
-          )}
-
-          {/* Verification Details Section */}
-          <ThemedText style={styles.sectionHeader}>Verification Details</ThemedText>
-          <View style={styles.accountBox}>
-            <View style={styles.accountRow}>
-              <ThemedText style={styles.infoLabel}>Report ID</ThemedText>
-              <ThemedText style={styles.infoValue} selectable>{reportId || '-'}</ThemedText>
             </View>
-            <View style={styles.accountRow}>
-              <ThemedText style={styles.infoLabel}>Generated</ThemedText>
-              <ThemedText style={styles.infoValue}>
-                {generatedAt ? new Date(generatedAt).toLocaleString() : '-'}
+
+            {/* Connected Accounts Section */}
+            <ThemedText style={styles.sectionHeader}>
+              Connected Account{accounts.length !== 1 ? 's' : ''} ({accounts.length})
+            </ThemedText>
+            {accounts.length === 0 ? (
+              <ThemedText style={styles.emptyText}>No Account data available.</ThemedText>
+            ) : (
+              accounts.map((acc: any, index: number) => (
+                <View key={acc.plaidAccountId} style={[styles.accountBox, index > 0 && { marginTop: 12 }]}>
+                  <View style={styles.accountHeaderRow}>
+                    <ThemedText style={styles.accountHeaderText}>Account {index + 1}</ThemedText>
+                  </View>
+                  <View style={styles.accountRow}>
+                    <ThemedText style={styles.infoLabel}>Bank Account Name</ThemedText>
+                    <ThemedText style={styles.infoValue}>{acc.name || '-'}</ThemedText>
+                  </View>
+                  <View style={styles.accountRow}>
+                    <ThemedText style={styles.infoLabel}>Bank</ThemedText>
+                    <ThemedText style={styles.infoValue}>{acc.bankName || '-'}</ThemedText>
+                  </View>
+                  <View style={styles.accountRow}>
+                    <ThemedText style={styles.infoLabel}>Account Type</ThemedText>
+                    <ThemedText style={styles.infoValue}>{acc.type || '-'}</ThemedText>
+                  </View>
+                  <View style={styles.accountRow}>
+                    <ThemedText style={styles.infoLabel}>Subtype</ThemedText>
+                    <ThemedText style={styles.infoValue}>{acc.subtype || '-'}</ThemedText>
+                  </View>
+                  <View style={[styles.accountRow, { borderBottomWidth: 0 }]}>
+                    <ThemedText style={styles.infoLabel}>Account Number (Last 4)</ThemedText>
+                    <ThemedText style={styles.infoValue}>•••• {acc.maskedNumber || '-'}</ThemedText>
+                  </View>
+                </View>
+              ))
+            )}
+
+            {/* Verification Details Section */}
+            <ThemedText style={styles.sectionHeader}>Verification Details</ThemedText>
+            <View style={styles.accountBox}>
+              <View style={styles.accountRow}>
+                <ThemedText style={styles.infoLabel}>Report ID</ThemedText>
+                <ThemedText style={styles.infoValue} selectable>{reportId || '-'}</ThemedText>
+              </View>
+              <View style={styles.accountRow}>
+                <ThemedText style={styles.infoLabel}>Generated</ThemedText>
+                <ThemedText style={styles.infoValue}>
+                  {generatedAt ? new Date(generatedAt).toLocaleString() : '-'}
+                </ThemedText>
+              </View>
+              <View style={[styles.accountRow, { borderBottomWidth: 0 }]}>
+                <ThemedText style={styles.infoLabel}>Status</ThemedText>
+                <ThemedText style={{ color: sufficient ? '#10B981' : '#EF4444', fontWeight: 'bold' }}>
+                  {sufficient ? 'Verified' : 'Rejected'}
+                </ThemedText>
+              </View>
+            </View>
+
+            {/* Summary Note */}
+            <View style={styles.noteBox}>
+              <Ionicons
+                name={sufficient ? 'checkmark-circle' : 'close-circle'}
+                size={22}
+                color={sufficient ? '#10B981' : '#EF4444'}
+                style={{ marginRight: 8 }}
+              />
+              <ThemedText style={styles.noteText}>
+                {sufficient
+                  ? `This verification report confirms that ${userName} has verified funds of ${formatCurrency(requestedAmount)} in their ${accounts[0]?.type || 'N/A'} account ending in ${accounts[0]?.maskedNumber || 'N/A'} at ${accounts[0]?.bankName || 'N/A'} Bank.`
+                  : `This verification report indicates that ${userName} has insufficient funds of ${formatCurrency(requestedAmount)} in their ${accounts[0]?.type || 'N/A'} account ending in ${accounts[0]?.maskedNumber || 'N/A'} at ${accounts[0]?.bankName || 'N/A'} Bank.`}
               </ThemedText>
             </View>
-            <View style={[styles.accountRow, { borderBottomWidth: 0 }]}>
-              <ThemedText style={styles.infoLabel}>Status</ThemedText>
-              <ThemedText style={{ color: sufficient ? '#10B981' : '#EF4444', fontWeight: 'bold' }}>
-                {sufficient ? 'Verified' : 'Rejected'}
+
+            {/* Footer */}
+            <View style={[styles.footer, { marginBottom: 80 }]}>
+              <ThemedText style={styles.footerText}>
+                This report was automatically generated by the Banking Verification System.
               </ThemedText>
             </View>
           </View>
-
-          {/* Summary Note */}
-          <View style={styles.noteBox}>
-            <Ionicons
-              name={sufficient ? 'checkmark-circle' : 'close-circle'}
-              size={22}
-              color={sufficient ? '#10B981' : '#EF4444'}
-              style={{ marginRight: 8 }}
-            />
-            <ThemedText style={styles.noteText}>
-              {sufficient
-                ? `This verification report confirms that ${userName} has verified funds of ${formatCurrency(requestedAmount)} in their ${accounts[0]?.type || 'N/A'} account ending in ${accounts[0]?.maskedNumber || 'N/A'} at ${accounts[0]?.bankName || 'N/A'} Bank.`
-                : `This verification report indicates that ${userName} has insufficient funds of ${formatCurrency(requestedAmount)} in their ${accounts[0]?.type || 'N/A'} account ending in ${accounts[0]?.maskedNumber || 'N/A'} at ${accounts[0]?.bankName || 'N/A'} Bank.`}
-            </ThemedText>
-          </View>
-
-          {/* Footer */}
-          <View style={[styles.footer, { marginBottom: 80 }]}>
-            <ThemedText style={styles.footerText}>
-              This report was automatically generated by the Banking Verification System.
-            </ThemedText>
-          </View>
-        </View>
-      </ScrollView>
-      <TouchableOpacity style={styles.fab} onPress={handleDownloadReport}>
-        <Ionicons name="download-outline" size={24} color="#fff" />
-      </TouchableOpacity>
-    </View>
+        </ScrollView>
+        <TouchableOpacity style={styles.fab} onPress={handleDownloadReport}>
+          <Ionicons name="download-outline" size={24} color="#fff" />
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 }
 

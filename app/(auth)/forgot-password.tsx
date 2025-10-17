@@ -5,15 +5,22 @@ import { Colors } from '@/constants/theme';
 import Button from '@/components/ui/button';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
+import { LinearGradient } from 'expo-linear-gradient';
+import { myColors } from '@/constants/my-constants';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const { forgotPassword, isAuthenticating } = useAuth();
 
   return (
-    <View style={styles.container}>
+    <LinearGradient
+      colors={[myColors.gradient1, myColors.gradient2]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.container} // reuse your container style for flex/padding
+    >
       <KeyboardAvoidingView
-        style={{width: '100%'}}
+        style={{ width: '100%' }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.header}>
@@ -40,7 +47,7 @@ export default function ForgotPassword() {
             onPress={() => forgotPassword(email)}
             isLoading={isAuthenticating}
             textStyle={{ fontSize: 18, fontWeight: 'bold', color: '#FFFFFF' }}
-            style={{backgroundColor: Colors.dark.tint}}
+            style={{ backgroundColor: Colors.dark.tint }}
           />
 
           <Link href="/login" style={styles.link}>
@@ -50,7 +57,7 @@ export default function ForgotPassword() {
           </Link>
         </View>
       </KeyboardAvoidingView>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -107,7 +114,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 17,
-    color: Colors.dark.text,
+    color: Colors.dark.cardText,
   },
   link: {
     alignSelf: 'center',

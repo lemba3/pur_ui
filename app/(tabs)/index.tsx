@@ -14,6 +14,8 @@ import { useGenerateReport } from '@/hooks/report';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { myColors } from '@/constants/my-constants';
 
 export default function HomeScreen() {
   const { data: connectedBanks, isLoading: isFetchingBanks } = useConnectedBanks();
@@ -160,7 +162,12 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors.dark.background }} edges={['top', 'left', 'right']}>
-      <View style={styles.container}>
+      <LinearGradient
+        colors={[myColors.gradient1, myColors.gradient2]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.container} // reuse your container style for flex/padding
+      >
         <View style={styles.header}>
           <ThemedText type="title" style={styles.headerTitle}>My Banks</ThemedText>
           <ThemedText type="subtitle" style={styles.headerSubtitle}>Manage your connected financial institutions</ThemedText>
@@ -211,7 +218,7 @@ export default function HomeScreen() {
           submitButtonText="Verify"
           isLoading={isVerifying}
         />
-      </View>
+      </LinearGradient>
     </SafeAreaView>
   );
 }

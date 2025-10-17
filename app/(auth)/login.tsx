@@ -5,6 +5,8 @@ import { Link } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import Button from '@/components/ui/button';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { myColors } from '@/constants/my-constants';
 
 export default function Login() {
   const [email, setEmail] = useState('test@gmail.com');
@@ -12,7 +14,12 @@ export default function Login() {
   const { signIn, signInWithGoogle, isAuthenticating, authMethod } = useAuth();
 
   return (
-    <View style={styles.container}>
+    <LinearGradient
+      colors={[myColors.gradient1, myColors.gradient2]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.container} // reuse your container style for flex/padding
+    >
       <KeyboardAvoidingView
         style={{ width: '100%' }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -82,7 +89,8 @@ export default function Login() {
           </Link>
         </View>
       </KeyboardAvoidingView>
-    </View>
+    </LinearGradient>
+
   );
 }
 

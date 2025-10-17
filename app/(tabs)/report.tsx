@@ -7,6 +7,8 @@ import { useRouter } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { myColors } from '@/constants/my-constants';
 
 interface Report {
   id: string;
@@ -73,35 +75,55 @@ export default function ReportScreen() {
 
   if (status === 'pending') {
     return (
-      <View style={styles.container_center}>
+      <LinearGradient
+        colors={[myColors.gradient1, myColors.gradient2]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.container_center} // reuse your container style for flex/padding
+      >
         <ActivityIndicator size="large" color={Colors.dark.tint} />
         <ThemedText style={{ marginTop: 10, color: Colors.dark.text }}>Loading Reports...</ThemedText>
-      </View>
+      </LinearGradient>
     );
   }
 
   if (status === 'error') {
     return (
-      <View style={styles.container_center}>
+      <LinearGradient
+        colors={[myColors.gradient1, myColors.gradient2]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.container_center} // reuse your container style for flex/padding
+      >
         <MaterialCommunityIcons name="alert-circle-outline" size={50} color="red" />
         <ThemedText style={{ marginTop: 10, color: Colors.dark.text }}>Error: {error.message}</ThemedText>
-      </View>
+      </LinearGradient>
     );
   }
 
   if (reports.length === 0 && status === 'success') {
     return (
-      <View style={styles.container_center}>
+      <LinearGradient
+        colors={[myColors.gradient1, myColors.gradient2]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.container_center} // reuse your container style for flex/padding
+      >
         <MaterialCommunityIcons name="file-document-outline" size={50} color={Colors.dark.icon} />
         <ThemedText style={{ marginTop: 10, color: Colors.dark.text }}>No reports found.</ThemedText>
         <ThemedText style={{ opacity: 0.7, textAlign: 'center', marginTop: 5, color: Colors.dark.text }}>Start verifying to see your reports here.</ThemedText>
-      </View>
+      </LinearGradient>
     )
   }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors.dark.background }} edges={['top', 'left', 'right']}>
-      <View style={styles.container}>
+      <LinearGradient
+        colors={[myColors.gradient1, myColors.gradient2]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.container} // reuse your container style for flex/padding
+      >
         <View style={styles.header}>
           <ThemedText type="title" style={styles.headerTitle}>Verification Reports</ThemedText>
           <ThemedText style={styles.headerSubtitle}>Your financial verification history</ThemedText>
@@ -115,7 +137,7 @@ export default function ReportScreen() {
           ListFooterComponent={isFetchingNextPage ? <ActivityIndicator color={Colors.dark.tint} style={{ marginVertical: 20 }} /> : null}
           contentContainerStyle={{ paddingVertical: 16 }}
         />
-      </View>
+      </LinearGradient>
     </SafeAreaView>
   );
 }
