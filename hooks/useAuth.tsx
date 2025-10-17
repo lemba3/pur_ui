@@ -1,9 +1,14 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import { createContext, useState, useEffect, useContext } from 'react';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import axios, { isAxiosError } from 'axios';
 import { EXPO_PUBLIC_BASE_API_URL } from '@/constants/my-constants';
 import api, { setOnTokenRefresh } from '@/lib/api'; // Import api and setOnTokenRefresh
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
+import { makeRedirectUri } from 'expo-auth-session';
+
+WebBrowser.maybeCompleteAuthSession();
 
 interface Session {
   user: {
@@ -19,6 +24,7 @@ interface Session {
 
 const AuthContext = createContext<{
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   signOut: () => void;
   signUp: (email: string, password: string, name: string) => Promise<void>;
   session?: Session | null;
@@ -26,6 +32,7 @@ const AuthContext = createContext<{
   isAuthenticating: boolean;
 }>({
   signIn: () => Promise.resolve(),
+  signInWithGoogle: () => Promise.resolve(),
   signOut: () => { },
   signUp: () => Promise.resolve(),
   session: null,
@@ -38,6 +45,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const router = useRouter();
+
+  // TODO: Replace with your own client IDs
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
+    clientId: process.env.EXPO_PUBLIC_WEB_CLIENT_ID, // This is your web client ID
+    androidClientId: process.env.EXPO_PUBLIC_ANDROID_CLIENT_ID, // This is your android client ID
+    iosClientId: process.env.EXPO_PUBLIC_IOS_CLIENT_ID, // This is your iOS client ID
+  });
+
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const { id_token } = response.params;
+      handleGoogleSignIn(id_token);
+    }
+  }, [response]);
+
+  const handleGoogleSignIn = async (idToken: string) => {
+    setIsAuthenticating(true);
+    try {
+      const res = await axios.post(EXPO_PUBLIC_BASE_API_URL + '/auth/google', { idToken });
+      const sessionValue: Session = res.data;
+      await SecureStore.setItemAsync('session', JSON.stringify(sessionValue));
+      setSession(sessionValue);
+      if (sessionValue?.token?.accessToken) {
+        api.defaults.headers.common['Authorization'] = `Bearer ${sessionValue.token.accessToken}`;
+      }
+    } catch (e) {
+      console.error("Google Sign in failed", e);
+      if (isAxiosError(e) && e.response) {
+        alert(`Google Sign in failed: ${e.response.data.error || 'An error occurred'}`);
+      } else {
+        alert("Google Sign in failed. Check console for details.");
+      }
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
 
   useEffect(() => {
     // Set up the token refresh listener
@@ -88,6 +132,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const signInWithGoogle = async () => {
+    await promptAsync();
+  };
+
   const signOut = async () => {
     await SecureStore.deleteItemAsync('session');
     setSession(null);
@@ -122,6 +170,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         signIn,
+        signInWithGoogle,
         signOut,
         signUp,
         session,

@@ -11,7 +11,7 @@ import { myColors } from '@/constants/my-constants';
 export default function Login() {
   const [email, setEmail] = useState('test@gmail.com');
   const [password, setPassword] = useState('test');
-  const { signIn, isAuthenticating } = useAuth();
+  const { signIn, signInWithGoogle, isAuthenticating } = useAuth();
   const currentColors = Colors['light'];
 
   const gradientColors: readonly [string, string, ...string[]] = [myColors.gradient1, myColors.gradient2]; // soft light gradient
@@ -60,6 +60,22 @@ export default function Login() {
             isLoading={isAuthenticating}
             textStyle={{ fontSize: 18, fontWeight: 'bold' }}
           />
+
+          <View style={styles.separatorContainer}>
+            <View style={styles.separatorLine} />
+            <Text style={styles.separatorText}>OR</Text>
+            <View style={styles.separatorLine} />
+          </View>
+
+          <Button
+            title="Sign In with Google"
+            onPress={signInWithGoogle}
+            isLoading={isAuthenticating}
+            style={{ backgroundColor: '#4285F4', marginTop: 10 }}
+            icon={<MaterialCommunityIcons name="google" size={20} color="white" style={{ marginRight: 10 }} />}
+            textStyle={{ fontSize: 18, fontWeight: 'bold' }}
+          />
+
           <Link href="/signup" style={styles.link}>
             <Text style={[styles.linkText, { color: currentColors.tint }]}>
               Don&apos;t have an account? Sign Up
@@ -133,5 +149,20 @@ const styles = StyleSheet.create({
   linkText: {
     fontSize: 15,
     fontWeight: '500',
+  },
+  separatorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  separatorLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#ccc',
+  },
+  separatorText: {
+    marginHorizontal: 10,
+    color: '#888',
+    fontWeight: '600',
   },
 });
