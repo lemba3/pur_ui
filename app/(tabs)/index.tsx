@@ -140,9 +140,9 @@ export default function HomeScreen() {
         <View style={styles.accountsContainer}>
           {item.accounts.map((account: any) => (
             <View key={account.account_id} style={styles.bankItemAccountItem}>
-              <ThemedText style={styles.bankItemAccountName}>{account.name}</ThemedText>
+              <ThemedText style={styles.bankItemAccountName}>{account.name} ({account.subtype})</ThemedText>
               <View style={styles.bankItemAccountDetails}>
-                <ThemedText style={styles.bankItemAccountSubtype}>{account.subtype}</ThemedText>
+                {/* <ThemedText style={styles.bankItemAccountSubtype}>{account.subtype}</ThemedText> */}
                 <ThemedText style={styles.bankItemAccountMask}>•••• {account.mask}</ThemedText>
               </View>
             </View>
@@ -155,7 +155,7 @@ export default function HomeScreen() {
         isLoading={isVerifying && selectedItemId === item.itemId}
         disabled={isVerifying}
         style={[styles.verifyButton, { marginTop: 15, backgroundColor: Colors.dark.tint }]} // Added marginTop for spacing
-        icon={<MaterialCommunityIcons name="file-chart-outline" size={24} color="#fff" />}
+        icon={<MaterialCommunityIcons name="file-chart-outline" size={24} color={Colors.dark.text} />}
       />
     </ThemedView>
   );
@@ -184,25 +184,25 @@ export default function HomeScreen() {
               data={connectedBanks}
               renderItem={renderBankItem}
               keyExtractor={(item) => item.itemId}
-              contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12 }} // Added paddingTop
+              contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12 }}
               ListEmptyComponent={() => (
                 <View style={styles.emptyListContainer}>
                   <MaterialCommunityIcons name="bank-plus" size={50} color={Colors.dark.icon} />
                   <ThemedText style={styles.emptyListText}>No banks connected yet.</ThemedText>
-                  <ThemedText style={{ opacity: 0.7, textAlign: 'center', marginTop: 5, color: Colors.dark.text }}>Tap &quot;Add Bank&quot; to get started.</ThemedText>
+                  <ThemedText style={{ opacity: 0.7, textAlign: 'center', marginTop: 5, color: Colors.dark.text }}>Tap the &quot;+&quot; button to get started.</ThemedText>
                 </View>
               )}
             />
           )}
         </View>
 
-        <View style={[styles.buttonContainer, { marginTop: 10 }]}>
+        <View style={styles.fabContainer}>
           <Button
             onPress={handleAddBank}
+            style={styles.fab}
             title="Add Bank"
-            style={[styles.addBankButton, { backgroundColor: Colors.dark.tint }]}
-            textStyle={styles.addBankButtonText}
-            icon={<MaterialCommunityIcons name="plus-circle-outline" size={24} color="#fff" />} />
+            textStyle={styles.fabText}
+            icon={<MaterialCommunityIcons name="plus" size={22} color={Colors.dark.text} />} />
         </View>
 
         <InputModal
@@ -247,6 +247,7 @@ const styles = StyleSheet.create({
   },
   bankListContainer: {
     flex: 1,
+    paddingBottom: 12, // Space for FAB
   },
   loadingContainer: {
     flex: 1,
@@ -316,7 +317,6 @@ const styles = StyleSheet.create({
     color: Colors.dark.cardText,
   },
   verifyButton: {
-    minWidth: 90,
     height: 40,
     paddingHorizontal: 15,
     borderRadius: 10,
@@ -333,22 +333,32 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: Colors.dark.text,
   },
-  buttonContainer: {
-    paddingHorizontal: 16,
+  fabContainer: {
+    position: 'absolute',
+    bottom: 10,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
   },
-  addBankButton: {
-    height: 55,
-    borderRadius: 15,
+  fab: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    width: '80%',
-    alignSelf: 'center',
+    gap: 8,
+    width: 'auto',
+    paddingHorizontal: 24,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.dark.tint,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
-  addBankButtonText: {
-    color: '#fff',
-    fontSize: 18,
+  fabText: {
+    color: Colors.dark.text,
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });
