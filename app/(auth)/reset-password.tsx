@@ -1,20 +1,35 @@
-import { useAuth } from '@/hooks/useAuth';
+
 import React, { useState } from 'react';
 import { View, TextInput, StyleSheet, Text, KeyboardAvoidingView, Platform, Image } from 'react-native';
-import { Link } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import Button from '@/components/ui/button';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { myColors } from '@/constants/my-constants';
+import { useAuth } from '@/hooks/useAuth';
 
-export default function Login() {
-  const [email, setEmail] = useState('');
+export default function ResetPassword() {
+  const { token } = useLocalSearchParams();
   const [password, setPassword] = useState('');
-  const { signIn, signInWithGoogle, isAuthenticating } = useAuth();
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const { resetPassword, isAuthenticating } = useAuth();
+  const router = useRouter();
   const currentColors = Colors['light'];
 
-  const gradientColors: readonly [string, string, ...string[]] = [myColors.gradient1, myColors.gradient2]; // soft light gradient
+  const gradientColors: readonly [string, string, ...string[]] = [myColors.gradient1, myColors.gradient2];
+
+  const handleResetPassword = () => {
+    if (password !== confirmPassword) {
+      alert('Passwords do not match');
+      return;
+    }
+    if (typeof token === 'string') {
+      resetPassword(token, password);
+    } else {
+      alert('Invalid token');
+    }
+  };
 
   return (
     <LinearGradient
@@ -27,22 +42,11 @@ export default function Login() {
       >
         <View style={styles.header}>
           <Image source={require('@/assets/images/pur.png')} style={styles.logo} />
-          <Text style={[styles.title, { color: currentColors.text }]}>Welcome Back</Text>
-          <Text style={[styles.subtitle, { color: currentColors.text }]}>Sign in to continue</Text>
+          <Text style={[styles.title, { color: currentColors.text }]}>Reset Password</Text>
+          <Text style={[styles.subtitle, { color: currentColors.text }]}>Enter your new password</Text>
         </View>
 
         <View style={[styles.card, { backgroundColor: currentColors.cardBackground }]}>
-          <View style={[styles.inputContainer, { borderColor: currentColors.icon, backgroundColor: currentColors.inputBackground }]}>
-            <MaterialCommunityIcons name="email-outline" size={24} color={currentColors.icon} style={styles.icon} />
-            <TextInput
-              style={[styles.input, { color: currentColors.text }]} placeholder="Email"
-              placeholderTextColor={currentColors.icon}
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-          </View>
           <View style={[styles.inputContainer, { borderColor: currentColors.icon, backgroundColor: currentColors.inputBackground }]}>
             <MaterialCommunityIcons name="lock-outline" size={24} color={currentColors.icon} style={styles.icon} />
             <TextInput
@@ -53,40 +57,23 @@ export default function Login() {
               secureTextEntry
             />
           </View>
-
-          <Button
-            title="Sign In"
-            onPress={() => signIn(email, password)}
-            isLoading={isAuthenticating}
-            textStyle={{ fontSize: 18, fontWeight: 'bold' }}
-          />
-
-          <Link href="/forgot-password" style={styles.link}>
-            <Text style={[styles.linkText, { color: currentColors.tint, textAlign: 'right', width: '100%', marginTop: -20, marginBottom: 10 }]}>
-              Forgot Password?
-            </Text>
-          </Link>
-
-          <View style={styles.separatorContainer}>
-            <View style={styles.separatorLine} />
-            <Text style={styles.separatorText}>OR</Text>
-            <View style={styles.separatorLine} />
+          <View style={[styles.inputContainer, { borderColor: currentColors.icon, backgroundColor: currentColors.inputBackground }]}>
+            <MaterialCommunityIcons name="lock-outline" size={24} color={currentColors.icon} style={styles.icon} />
+            <TextInput
+              style={[styles.input, { color: currentColors.text }]} placeholder="Confirm Password"
+              placeholderTextColor={currentColors.icon}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+            />
           </View>
 
           <Button
-            title="Sign In with Google"
-            onPress={signInWithGoogle}
+            title="Reset Password"
+            onPress={handleResetPassword}
             isLoading={isAuthenticating}
-            style={{ backgroundColor: '#4285F4', marginTop: 10 }}
-            icon={<MaterialCommunityIcons name="google" size={20} color="white" style={{ marginRight: 10 }} />}
             textStyle={{ fontSize: 18, fontWeight: 'bold' }}
           />
-
-          <Link href="/signup" style={styles.link}>
-            <Text style={[styles.linkText, { color: currentColors.tint }]}>
-              Don&apos;t have an account? Sign Up
-            </Text>
-          </Link>
         </View>
       </KeyboardAvoidingView>
     </LinearGradient>
@@ -147,28 +134,5 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 17,
-  },
-  link: {
-    alignSelf: 'center',
-    marginTop: 25,
-  },
-  linkText: {
-    fontSize: 15,
-    fontWeight: '500',
-  },
-  separatorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 20,
-  },
-  separatorLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#ccc',
-  },
-  separatorText: {
-    marginHorizontal: 10,
-    color: '#888',
-    fontWeight: '600',
   },
 });

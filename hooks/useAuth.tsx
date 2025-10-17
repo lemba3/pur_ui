@@ -27,6 +27,8 @@ const AuthContext = createContext<{
   signInWithGoogle: () => Promise<void>;
   signOut: () => void;
   signUp: (email: string, password: string, name: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (token: string, password: string) => Promise<void>;
   session?: Session | null;
   isLoading: boolean;
   isAuthenticating: boolean;
@@ -35,6 +37,8 @@ const AuthContext = createContext<{
   signInWithGoogle: () => Promise.resolve(),
   signOut: () => { },
   signUp: () => Promise.resolve(),
+  forgotPassword: () => Promise.resolve(),
+  resetPassword: () => Promise.resolve(),
   session: null,
   isLoading: false,
   isAuthenticating: false,
@@ -166,6 +170,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const forgotPassword = async (email: string) => {
+    setIsAuthenticating(true);
+    try {
+      await axios.post(EXPO_PUBLIC_BASE_API_URL + '/auth/forgot-password', {
+        email,
+      });
+      alert('A password reset link has been sent to your email.');
+    } catch (e) {
+      console.error("Forgot password failed", e);
+      if (isAxiosError(e) && e.response) {
+        alert(`Forgot password failed: ${e.response.data.error || 'An error occurred'}`);
+      } else {
+        alert("Forgot password failed. Check console for details.");
+      }
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
+  const resetPassword = async (token: string, password: string) => {
+    setIsAuthenticating(true);
+    try {
+      await axios.post(EXPO_PUBLIC_BASE_API_URL + '/auth/reset-password', {
+        token,
+        password,
+      });
+      alert('Your password has been reset successfully.');
+      router.push('/login');
+    } catch (e) {
+      console.error("Reset password failed", e);
+      if (isAxiosError(e) && e.response) {
+        alert(`Reset password failed: ${e.response.data.error || 'An error occurred'}`);
+      } else {
+        alert("Reset password failed. Check console for details.");
+      }
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -173,6 +217,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signInWithGoogle,
         signOut,
         signUp,
+        forgotPassword,
+        resetPassword,
         session,
         isLoading,
         isAuthenticating,

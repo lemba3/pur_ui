@@ -1,4 +1,4 @@
-import { useAuth } from '@/hooks/useAuth';
+
 import React, { useState } from 'react';
 import { View, TextInput, StyleSheet, Text, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { Link } from 'expo-router';
@@ -7,14 +7,14 @@ import Button from '@/components/ui/button';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { myColors } from '@/constants/my-constants';
+import { useAuth } from '@/hooks/useAuth';
 
-export default function Login() {
+export default function ForgotPassword() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const { signIn, signInWithGoogle, isAuthenticating } = useAuth();
+  const { forgotPassword, isAuthenticating } = useAuth();
   const currentColors = Colors['light'];
 
-  const gradientColors: readonly [string, string, ...string[]] = [myColors.gradient1, myColors.gradient2]; // soft light gradient
+  const gradientColors: readonly [string, string, ...string[]] = [myColors.gradient1, myColors.gradient2];
 
   return (
     <LinearGradient
@@ -27,8 +27,8 @@ export default function Login() {
       >
         <View style={styles.header}>
           <Image source={require('@/assets/images/pur.png')} style={styles.logo} />
-          <Text style={[styles.title, { color: currentColors.text }]}>Welcome Back</Text>
-          <Text style={[styles.subtitle, { color: currentColors.text }]}>Sign in to continue</Text>
+          <Text style={[styles.title, { color: currentColors.text }]}>Forgot Password</Text>
+          <Text style={[styles.subtitle, { color: currentColors.text }]}>Enter your email to receive a reset link</Text>
         </View>
 
         <View style={[styles.card, { backgroundColor: currentColors.cardBackground }]}>
@@ -43,48 +43,17 @@ export default function Login() {
               keyboardType="email-address"
             />
           </View>
-          <View style={[styles.inputContainer, { borderColor: currentColors.icon, backgroundColor: currentColors.inputBackground }]}>
-            <MaterialCommunityIcons name="lock-outline" size={24} color={currentColors.icon} style={styles.icon} />
-            <TextInput
-              style={[styles.input, { color: currentColors.text }]} placeholder="Password"
-              placeholderTextColor={currentColors.icon}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
-          </View>
 
           <Button
-            title="Sign In"
-            onPress={() => signIn(email, password)}
+            title="Send Reset Link"
+            onPress={() => forgotPassword(email)}
             isLoading={isAuthenticating}
             textStyle={{ fontSize: 18, fontWeight: 'bold' }}
           />
 
-          <Link href="/forgot-password" style={styles.link}>
-            <Text style={[styles.linkText, { color: currentColors.tint, textAlign: 'right', width: '100%', marginTop: -20, marginBottom: 10 }]}>
-              Forgot Password?
-            </Text>
-          </Link>
-
-          <View style={styles.separatorContainer}>
-            <View style={styles.separatorLine} />
-            <Text style={styles.separatorText}>OR</Text>
-            <View style={styles.separatorLine} />
-          </View>
-
-          <Button
-            title="Sign In with Google"
-            onPress={signInWithGoogle}
-            isLoading={isAuthenticating}
-            style={{ backgroundColor: '#4285F4', marginTop: 10 }}
-            icon={<MaterialCommunityIcons name="google" size={20} color="white" style={{ marginRight: 10 }} />}
-            textStyle={{ fontSize: 18, fontWeight: 'bold' }}
-          />
-
-          <Link href="/signup" style={styles.link}>
+          <Link href="/login" style={styles.link}>
             <Text style={[styles.linkText, { color: currentColors.tint }]}>
-              Don&apos;t have an account? Sign Up
+              Back to Sign In
             </Text>
           </Link>
         </View>
@@ -156,19 +125,5 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '500',
   },
-  separatorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 20,
-  },
-  separatorLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#ccc',
-  },
-  separatorText: {
-    marginHorizontal: 10,
-    color: '#888',
-    fontWeight: '600',
-  },
 });
+
