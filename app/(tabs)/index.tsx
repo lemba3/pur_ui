@@ -140,7 +140,7 @@ export default function HomeScreen() {
         <View style={styles.accountsContainer}>
           {item.accounts.map((account: any) => (
             <View key={account.account_id} style={styles.bankItemAccountItem}>
-              <ThemedText style={styles.bankItemAccountName}>{account.name} ({account.subtype})</ThemedText>
+              <ThemedText style={styles.bankItemAccountName}>{account.name || account.subtype}</ThemedText>
               <View style={styles.bankItemAccountDetails}>
                 {/* <ThemedText style={styles.bankItemAccountSubtype}>{account.subtype}</ThemedText> */}
                 <ThemedText style={styles.bankItemAccountMask}>•••• {account.mask}</ThemedText>
