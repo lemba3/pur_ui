@@ -32,6 +32,7 @@ const AuthContext = createContext<{
   session?: Session | null;
   isLoading: boolean;
   isAuthenticating: boolean;
+  authMethod: 'email' | 'google' | null;
 }>({
   signIn: () => Promise.resolve(),
   signInWithGoogle: () => Promise.resolve(),
@@ -42,12 +43,14 @@ const AuthContext = createContext<{
   session: null,
   isLoading: false,
   isAuthenticating: false,
+  authMethod: null,
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [authMethod, setAuthMethod] = useState<'email' | 'google' | null>(null);
   const router = useRouter();
 
   // TODO: Replace with your own client IDs
@@ -66,6 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const handleGoogleSignIn = async (idToken: string) => {
     setIsAuthenticating(true);
+    setAuthMethod('google');
     try {
       const res = await axios.post(EXPO_PUBLIC_BASE_API_URL + '/auth/google', { idToken });
       const sessionValue: Session = res.data;
@@ -83,6 +87,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } finally {
       setIsAuthenticating(false);
+      setAuthMethod(null);
     }
   };
 
@@ -110,6 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     setIsAuthenticating(true);
+    setAuthMethod('email');
     try {
       const response = await axios.post(EXPO_PUBLIC_BASE_API_URL + '/auth/login', {
         email,
@@ -133,10 +139,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } finally {
       setIsAuthenticating(false);
+      setAuthMethod(null);
     }
   };
 
   const signInWithGoogle = async () => {
+    setAuthMethod('google');
     await promptAsync();
   };
 
@@ -222,6 +230,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         session,
         isLoading,
         isAuthenticating,
+        authMethod,
       }}>
       {children}
     </AuthContext.Provider>

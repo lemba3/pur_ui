@@ -9,9 +9,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { myColors } from '@/constants/my-constants';
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const { signIn, signInWithGoogle, isAuthenticating } = useAuth();
+  const [email, setEmail] = useState('test@gmail.com');
+  const [password, setPassword] = useState('test');
+  const { signIn, signInWithGoogle, isAuthenticating, authMethod } = useAuth();
   const currentColors = Colors['light'];
 
   const gradientColors: readonly [string, string, ...string[]] = [myColors.gradient1, myColors.gradient2]; // soft light gradient
@@ -57,7 +57,7 @@ export default function Login() {
           <Button
             title="Sign In"
             onPress={() => signIn(email, password)}
-            isLoading={isAuthenticating}
+            isLoading={isAuthenticating && authMethod === 'email'}
             textStyle={{ fontSize: 18, fontWeight: 'bold' }}
           />
 
@@ -76,9 +76,9 @@ export default function Login() {
           <Button
             title="Sign In with Google"
             onPress={signInWithGoogle}
-            isLoading={isAuthenticating}
+            isLoading={isAuthenticating && authMethod === 'google'}
             style={{ backgroundColor: '#4285F4', marginTop: 10 }}
-            icon={<MaterialCommunityIcons name="google" size={20} color="white" style={{ marginRight: 10 }} />}
+            icon={<MaterialCommunityIcons name="google" size={20} color="white" style={{ marginRight: 10 }} />}            
             textStyle={{ fontSize: 18, fontWeight: 'bold' }}
           />
 
