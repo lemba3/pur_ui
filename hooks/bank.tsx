@@ -2,12 +2,20 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { useAuth } from './useAuth';
 
+export interface Account {
+  account_id: string;
+  name: string;
+  subtype: string;
+  mask: string;
+}
+
 export interface ConnectedBank {
   itemId: string;
   institution: {
     name: string;
     logo?: string;
   };
+  accounts: Account[];
 }
 
 const fetchConnectedBanks = async ({ queryKey }: { queryKey: readonly (string | undefined)[] }): Promise<ConnectedBank[]> => {

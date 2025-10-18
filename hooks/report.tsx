@@ -51,8 +51,29 @@ export const useReports = () => {
   };
 };
 
-const generateReport = async ({ amount, plaidItemId }: { amount: number; plaidItemId: string }) => {
-  const response = await api.post('/plaid/generate-report', { amount, itemId: plaidItemId });
+const generateReport = async ({ 
+  amount, 
+  plaidItemId, 
+  accountId, 
+  fullName, 
+  bankAccountName, 
+  purposeOfVerification 
+}: { 
+  amount: number; 
+  plaidItemId: string; 
+  accountId: string; 
+  fullName: string; 
+  bankAccountName: string; 
+  purposeOfVerification: string; 
+}) => {
+  const response = await api.post('/plaid/generate-report', { 
+    amount, 
+    itemId: plaidItemId, 
+    accountId, 
+    fullName, 
+    bankAccountName, 
+    purposeOfVerification 
+  });
   return response.data;
 };
 
@@ -64,27 +85,23 @@ export const useGenerateReport = () => {
   return useMutation({
     mutationFn: generateReport,
     onSuccess: (data) => {
-      // Force refetch of both queries
-      queryClient.resetQueries({
-        queryKey: ['reports', session?.token.accessToken],
-        exact: true
-      });
-      queryClient.resetQueries({
-        queryKey: ['connectedBanks', session?.token.accessToken],
-        exact: true
-      });
+      queryClient.invalidateQueries({ queryKey: ['reports', session?.token.accessToken] });
+      queryClient.invalidateQueries({ queryKey: ['connectedBanks', session?.token.accessToken] });
 
-      // Then, navigate to the verification result screen, passing only the reportId
       router.push({
         pathname: '/verification-result',
         params: {
-          reportId: data.reportId, // Assuming data.reportId exists
-          sufficient: String(data.sufficient), // Convert boolean to string
-          requestedAmount: String(data.requestedAmount), // Convert number to string
-          bankNames: data.bankNames.join(','), // Convert array to comma-separated string
-          userName: data.userName, // Get userName from the report data
-          generatedAt: data.generatedAt, // Already a string
-          accounts: JSON.stringify(data.accounts), // Pass accounts as a JSON string
+          reportId: data.reportId,
+          sufficient: String(data.sufficient),
+          requestedAmount: String(data.requestedAmount),
+          bankNames: data.bankNames.join(','),
+          userName: data.fullName, // Use fullName from the form
+          generatedAt: data.generatedAt,
+          accounts: JSON.stringify(data.accounts),
+          // Pass new fields
+          fullName: data.fullName,
+          bankAccountName: data.bankAccountName,
+          purposeOfVerification: data.purposeOfVerification,
         },
       });
     },

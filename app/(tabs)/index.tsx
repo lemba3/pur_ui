@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, View, FlatList, Image, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { StyleSheet, View, FlatList, Image, ActivityIndicator, TextInput, ScrollView, TouchableOpacity } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
 import api from '@/lib/api';
 import { pusher } from '@/lib/pusher';
 import { useRouter } from 'expo-router';
-import InputModal from '@/components/ui/input-modal';
 import Button from '@/components/ui/button';
+import { z, ZodError } from 'zod';
 
 import { useAuth } from '@/hooks/useAuth';
 import { useConnectedBanks, useInvalidateBanks } from '@/hooks/bank';
@@ -17,16 +16,41 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { myColors } from '@/constants/my-constants';
 
+const reportSchema = z.object({
+  fullName: z.string().min(1, 'Full name is required'),
+  bankAccountName: z.string().min(1, 'Bank account name is required'),
+  purpose: z.string().min(1, 'Purpose of verification is required'),
+  amount: z.coerce.number().positive('Amount must be a positive number'),
+  accountId: z.string().min(1, 'An account must be selected'),
+});
+
 export default function HomeScreen() {
   const { data: connectedBanks, isLoading: isFetchingBanks } = useConnectedBanks();
   const invalidateBanks = useInvalidateBanks();
-  const { mutate: generateReport, isPending: isVerifying } = useGenerateReport();
+  const { mutate: generateReport, isPending: isGeneratingReport } = useGenerateReport();
   const router = useRouter();
-  const [isModalVisible, setModalVisible] = useState(false);
-  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-  const [selectedBankName, setSelectedBankName] = useState<string>('');
-
   const { session, isLoading: isAuthLoading } = useAuth();
+
+  // Form State
+  const [fullName, setFullName] = useState('');
+  const [bankAccountName, setBankAccountName] = useState('');
+  const [purpose, setPurpose] = useState('');
+  const [amount, setAmount] = useState('');
+  const [selectedAccount, setSelectedAccount] = useState<{ plaidItemId: string; accountId: string } | null>(null);
+  const [errors, setErrors] = useState<any>({});
+  const [focusedInput, setFocusedInput] = useState<string | null>(null);
+
+  const allAccounts = useMemo(() => {
+    if (!connectedBanks) return [];
+    return connectedBanks.flatMap(bank =>
+      bank.accounts.map(account => ({
+        ...account,
+        plaidItemId: bank.itemId,
+        bankName: bank.institution.name,
+        bankLogo: bank.institution.logo,
+      }))
+    );
+  }, [connectedBanks]);
 
   useEffect(() => {
     console.log('[Debug] Component effect running, auth loading:', isAuthLoading, 'has session:', !!session);
@@ -85,79 +109,64 @@ export default function HomeScreen() {
   const handleAddBank = useCallback(() => {
     router.push({
       pathname: '/plaid-hosted-link',
-      params: {
-        redirect: '/(tabs)'
-      }
+      params: { redirect: '/(tabs)' }
     });
   }, [router]);
 
-  const handleVerifyAmount = useCallback((value: { amount: string }) => {
-    const numericAmount = parseFloat(value.amount);
-    if (isNaN(numericAmount) || numericAmount <= 0) {
-      console.error("Error: Please enter a valid positive amount.");
-      return;
+  const handleGenerateReport = useCallback(() => {
+    try {
+      const validatedData = reportSchema.parse({
+        fullName,
+        bankAccountName,
+        purpose,
+        amount,
+        accountId: selectedAccount?.accountId,
+      });
+      setErrors({});
+      generateReport({
+        amount: validatedData.amount,
+        plaidItemId: selectedAccount!.plaidItemId, // Non-null assertion is safe here due to schema validation
+        accountId: validatedData.accountId,
+        fullName: validatedData.fullName,
+        bankAccountName: validatedData.bankAccountName,
+        purposeOfVerification: validatedData.purpose,
+      });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const formattedErrors = error.flatten().fieldErrors;
+        setErrors(formattedErrors);
+        console.error("Validation errors:", formattedErrors);
+      }
     }
-    if (!selectedItemId) {
-      console.error("No bank selected");
-      return;
-    }
-    setModalVisible(false);
-    generateReport({ amount: numericAmount, plaidItemId: selectedItemId });
-    setSelectedItemId(null);
-    setSelectedBankName('');
-  }, [generateReport, selectedItemId]);
+  }, [generateReport, selectedAccount, fullName, bankAccountName, purpose, amount]);
 
-  const handleVerifyForBank = useCallback((itemId: string, bankName: string) => {
-    setSelectedItemId(itemId);
-    setSelectedBankName(bankName);
-    setModalVisible(true);
-  }, []);
-
-  const renderBankItem = ({ item }: { item: any }) => (
-    <ThemedView style={styles.bankItemCard}>
-      <View style={styles.bankItemHeader}>
-        {item.institution.logo ? (
+  const renderAccountItem = ({ item }: { item: any }) => (
+    <TouchableOpacity
+      onPress={() => setSelectedAccount({ plaidItemId: item.plaidItemId, accountId: item.account_id })}
+      style={[
+        styles.accountItem,
+        selectedAccount?.accountId === item.account_id && styles.selectedAccountItem
+      ]}
+    >
+      <View style={styles.accountItemRow1}>
+        {item.bankLogo ? (
           <Image
-            source={{ uri: `data:image/png;base64,${item.institution.logo}` }}
-            style={styles.bankItemLogo}
+            source={{ uri: `data:image/png;base64,${item.bankLogo}` }}
+            style={styles.bankLogo}
           />
         ) : (
           <MaterialCommunityIcons
             name="bank-outline"
-            size={32}
-            color={Colors.dark.icon}
-            style={styles.bankItemLogo}
+            size={20}
+            color={Colors.dark.cardText}
+            style={{ marginRight: 8 }}
           />
         )}
-        <View style={styles.bankItemInfo}>
-          <ThemedText style={styles.bankItemInstitutionName}>{item.institution.name}</ThemedText>
-          <ThemedText style={styles.bankItemLastSyncText}>
-            <MaterialCommunityIcons name="update" size={12} color={Colors.dark.icon} /> Last sync: {item.last_sync ? new Date(item.last_sync).toLocaleDateString() : 'N/A'}
-          </ThemedText>
-        </View>
+        <ThemedText style={styles.bankName} numberOfLines={1}>{item.bankName}</ThemedText>
       </View>
-      {item.accounts && item.accounts.length > 0 && (
-        <View style={styles.accountsContainer}>
-          {item.accounts.map((account: any) => (
-            <View key={account.account_id} style={styles.bankItemAccountItem}>
-              <ThemedText style={styles.bankItemAccountName}>{account.name || account.subtype}</ThemedText>
-              <View style={styles.bankItemAccountDetails}>
-                {/* <ThemedText style={styles.bankItemAccountSubtype}>{account.subtype}</ThemedText> */}
-                <ThemedText style={styles.bankItemAccountMask}>•••• {account.mask}</ThemedText>
-              </View>
-            </View>
-          ))}
-        </View>
-      )}
-      <Button
-        onPress={() => handleVerifyForBank(item.itemId, item.institution.name)}
-        title="Report"
-        isLoading={isVerifying && selectedItemId === item.itemId}
-        disabled={isVerifying}
-        style={[styles.verifyButton, { marginTop: 15, backgroundColor: Colors.dark.tint }]} // Added marginTop for spacing
-        icon={<MaterialCommunityIcons name="file-chart-outline" size={24} color={Colors.dark.text} />}
-      />
-    </ThemedView>
+      <ThemedText style={styles.accountSubtype}>{item.name || item.subtype}</ThemedText>
+      <ThemedText style={styles.accountMask}>•••• {item.mask}</ThemedText>
+    </TouchableOpacity>
   );
 
   return (
@@ -166,58 +175,105 @@ export default function HomeScreen() {
         colors={[myColors.gradient1, myColors.gradient2]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={styles.container} // reuse your container style for flex/padding
+        style={styles.container}
       >
-        <View style={styles.header}>
-          <ThemedText type="title" style={styles.headerTitle}>My Banks</ThemedText>
-          <ThemedText type="subtitle" style={styles.headerSubtitle}>Manage your connected financial institutions</ThemedText>
-        </View>
-
-        <View style={styles.bankListContainer}>
-          {isFetchingBanks ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={Colors.dark.tint} />
-              <ThemedText style={{ marginTop: 10, color: Colors.dark.text }}>Loading Banks...</ThemedText>
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <View>
+            <ThemedText type="title" style={styles.headerTitle}>Create Verification Report</ThemedText>
+            <ThemedText type="title" style={styles.headerSubtitle}>Please fill up form below</ThemedText>
+          </View>
+          <View style={styles.card}>
+            <ThemedText style={[styles.inputLabel, { marginTop: 0 }]}>Full Name</ThemedText>
+            <View style={[styles.inputContainer, focusedInput === 'fullName' && styles.inputContainerFocused]}>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter your full name"
+                value={fullName}
+                onChangeText={setFullName}
+                onFocus={() => setFocusedInput('fullName')}
+                onBlur={() => setFocusedInput(null)}
+              />
             </View>
-          ) : (
-            <FlatList
-              data={connectedBanks}
-              renderItem={renderBankItem}
-              keyExtractor={(item) => item.itemId}
-              contentContainerStyle={{ paddingHorizontal: 16, paddingVertical: 12 }}
-              ListEmptyComponent={() => (
-                <View style={styles.emptyListContainer}>
-                  <MaterialCommunityIcons name="bank-plus" size={50} color={Colors.dark.icon} />
-                  <ThemedText style={styles.emptyListText}>No banks connected yet.</ThemedText>
-                  <ThemedText style={{ opacity: 0.7, textAlign: 'center', marginTop: 5, color: Colors.dark.text }}>Tap the &quot;+&quot; button to get started.</ThemedText>
-                </View>
-              )}
+            {errors.fullName && <ThemedText style={styles.errorText}>{errors.fullName[0]}</ThemedText>}
+
+            <ThemedText style={styles.inputLabel}>Bank Account Name</ThemedText>
+            <View style={[styles.inputContainer, focusedInput === 'bankAccountName' && styles.inputContainerFocused]}>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter account name as it appears in your bank records"
+                value={bankAccountName}
+                onChangeText={setBankAccountName}
+                onFocus={() => setFocusedInput('bankAccountName')}
+                onBlur={() => setFocusedInput(null)}
+              />
+            </View>
+            {errors.bankAccountName && <ThemedText style={styles.errorText}>{errors.bankAccountName[0]}</ThemedText>}
+
+            <ThemedText style={styles.inputLabel}>Purpose of Verification</ThemedText>
+            <View style={[styles.inputContainer, focusedInput === 'purpose' && styles.inputContainerFocused]}>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. Loan application, Employment verification, etc."
+                value={purpose}
+                onChangeText={setPurpose}
+                onFocus={() => setFocusedInput('purpose')}
+                onBlur={() => setFocusedInput(null)}
+              />
+            </View>
+            {errors.purpose && <ThemedText style={styles.errorText}>{errors.purpose[0]}</ThemedText>}
+
+            <ThemedText style={styles.inputLabel}>Amount To Verify</ThemedText>
+            <View style={[styles.inputContainer, styles.amountInputContainer, focusedInput === 'amount' && styles.inputContainerFocused]}>
+              <ThemedText style={styles.dollarSign}>$</ThemedText>
+              <TextInput
+                style={styles.amountInput}
+                placeholder="e.g. 5000"
+                value={amount}
+                onChangeText={setAmount}
+                keyboardType="numeric"
+                onFocus={() => setFocusedInput('amount')}
+                onBlur={() => setFocusedInput(null)}
+              />
+            </View>
+            {errors.amount && <ThemedText style={styles.errorText}>{errors.amount[0]}</ThemedText>}
+
+            <View style={styles.selectAccountHeader}>
+              <ThemedText style={styles.selectAccountTitle}>Select Account to Verify</ThemedText>
+              <Button
+                onPress={handleAddBank}
+                title="+ Add Bank"
+                style={styles.addBankBtn}
+                textStyle={styles.addBankBtnText}
+              />
+            </View>
+            {errors.accountId && <ThemedText style={styles.errorText}>{errors.accountId[0]}</ThemedText>}
+
+            {isFetchingBanks ? (
+              <ActivityIndicator size="small" color={Colors.dark.tint} style={{ marginVertical: 20 }} />
+            ) : (
+              <FlatList
+                horizontal
+                data={allAccounts}
+                renderItem={renderAccountItem}
+                keyExtractor={(item) => item.account_id}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingVertical: 10 }}
+                ListEmptyComponent={() => (
+                  <ThemedText style={styles.emptyListText}>No banks connected. Please add one.</ThemedText>
+                )}
+              />
+            )}
+
+            <Button
+              onPress={handleGenerateReport}
+              title="Generate Report"
+              isLoading={isGeneratingReport}
+              disabled={isGeneratingReport}
+              style={styles.generateButton}
+              icon={<MaterialCommunityIcons name="file-chart-outline" size={24} color={Colors.dark.text} />}
             />
-          )}
-        </View>
-
-        <View style={styles.fabContainer}>
-          <Button
-            onPress={handleAddBank}
-            style={styles.fab}
-            title="Add Bank"
-            textStyle={styles.fabText}
-            icon={<MaterialCommunityIcons name="plus" size={22} color={Colors.dark.text} />} />
-        </View>
-
-        <InputModal
-          visible={isModalVisible}
-          onClose={() => {
-            setModalVisible(false);
-            setSelectedItemId(null);
-            setSelectedBankName('');
-          }}
-          onSubmit={handleVerifyAmount}
-          title={`Verify Balance - ${selectedBankName}`}
-          inputLabel="Enter Amt ($)"
-          submitButtonText="Verify"
-          isLoading={isVerifying}
-        />
+          </View>
+        </ScrollView>
       </LinearGradient>
     </SafeAreaView>
   );
@@ -226,13 +282,9 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.dark.background,
   },
-  header: {
-    paddingTop: 30, // Adjust for status bar
-    paddingBottom: 20,
-    paddingHorizontal: 20,
-    alignItems: 'center',
+  scrollContainer: {
+    padding: 16,
   },
   headerTitle: {
     fontSize: 28,
@@ -244,121 +296,132 @@ const styles = StyleSheet.create({
     marginTop: 4,
     opacity: 0.8,
     color: Colors.dark.text,
+    marginBottom: 20,
   },
-  bankListContainer: {
-    flex: 1,
-    paddingBottom: 12, // Space for FAB
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  bankItemCard: {
-    padding: 20,
-    marginBottom: 12,
+  card: {
+    backgroundColor: 'white',
     borderRadius: 15,
-    backgroundColor: Colors.dark.cardBackground,
+    padding: 20,
+    width: '100%',
   },
-  bankItemHeader: {
+  inputLabel: {
+    fontSize: 14,
+    color: Colors.dark.cardText,
+    marginBottom: 8,
+    fontWeight: '500',
+    marginTop: 15,
+  },
+  inputContainer: {
+    backgroundColor: Colors.dark.inputBackground,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.dark.inputBackground, // Default border
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
-    justifyContent: 'space-between',
   },
-  bankItemInfo: {
+  inputContainerFocused: {
+    borderColor: Colors.dark.tint, // Highlight color on focus
+  },
+  input: {
     flex: 1,
-    marginRight: 15,
+    color: Colors.dark.cardText,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    fontSize: 16,
   },
-  bankItemInstitutionName: {
-    fontWeight: 'bold',
-    fontSize: 18,
+  amountInputContainer: {
+    paddingLeft: 15,
+  },
+  dollarSign: {
+    color: Colors.dark.cardText,
+    fontSize: 16,
+  },
+  amountInput: {
+    flex: 1,
+    color: Colors.dark.cardText,
+    paddingLeft: 5,
+    paddingVertical: 12,
+    fontSize: 16,
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 12,
+    marginTop: 4,
+    marginBottom: 10,
+  },
+  selectAccountHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 5,
+  },
+  selectAccountTitle: {
+    fontSize: 16,
+    fontWeight: '600',
     color: Colors.dark.cardText,
   },
-  bankItemLastSyncText: {
+  addBankBtn: {
+    backgroundColor: Colors.dark.text,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: Colors.dark.background,
+    borderRadius: 20,
+  },
+  addBankBtnText: {
+    color: Colors.dark.tint,
+    fontWeight: 'bold',
+  },
+  accountItem: {
+    backgroundColor: Colors.dark.inputBackground,
+    borderRadius: 10,
+    padding: 12,
+    marginRight: 10,
+    width: 160, // Wider to fit content
+    height: 100,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    justifyContent: 'space-around',
+  },
+  selectedAccountItem: {
+    borderColor: Colors.dark.tint,
+  },
+  accountItemRow1: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  bankLogo: {
+    width: 20,
+    height: 20,
+    resizeMode: 'contain',
+    marginRight: 8,
+  },
+  bankName: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: Colors.dark.cardText,
+    flexShrink: 1,
+  },
+  accountSubtype: {
     fontSize: 13,
+    color: Colors.dark.cardText,
+    marginTop: 4,
+  },
+  accountMask: {
+    fontSize: 13,
+    color: Colors.dark.cardText,
     opacity: 0.7,
     marginTop: 2,
-    color: Colors.dark.cardText,
-  },
-  bankItemLogo: {
-    width: 45,
-    height: 45,
-    marginRight: 15,
-    resizeMode: 'contain',
-  },
-  accountsContainer: {
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.1)', // Subtle separator
-  },
-  bankItemAccountItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  bankItemAccountName: {
-    fontWeight: '500',
-    fontSize: 15,
-    color: Colors.dark.cardText,
-  },
-  bankItemAccountDetails: {
-    alignItems: 'flex-end',
-  },
-  bankItemAccountSubtype: {
-    textTransform: 'capitalize',
-    fontSize: 13,
-    opacity: 0.7,
-    color: Colors.dark.cardText,
-  },
-  bankItemAccountMask: {
-    fontSize: 13,
-    opacity: 0.7,
-    color: Colors.dark.cardText,
-  },
-  verifyButton: {
-    height: 40,
-    paddingHorizontal: 15,
-    borderRadius: 10,
-    alignSelf: 'flex-end',
-  },
-  emptyListContainer: {
-    alignItems: 'center',
-    marginTop: 50,
-    paddingHorizontal: 20,
   },
   emptyListText: {
-    marginTop: 15,
-    fontSize: 16,
-    textAlign: 'center',
-    color: Colors.dark.text,
+    color: Colors.dark.cardText,
+    alignSelf: 'center',
+    marginVertical: 20,
   },
-  fabContainer: {
-    position: 'absolute',
-    bottom: 10,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
-  fab: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    width: 'auto',
-    paddingHorizontal: 24,
-    height: 56,
-    borderRadius: 28,
+  generateButton: {
+    marginTop: 20,
     backgroundColor: Colors.dark.tint,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-  },
-  fabText: {
-    color: Colors.dark.text,
-    fontSize: 16,
-    fontWeight: 'bold',
+    height: 50,
+    borderRadius: 12,
   },
 });

@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/hooks/useAuth';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
-import { useGetReport } from '@/hooks/report'; // Import the renamed hook
+import { useGetReport } from '@/hooks/report';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
 
@@ -19,14 +19,14 @@ interface AccountDetails {
   maskedNumber: string;
 }
 
-// Helper to generate the HTML report
 const generateReportHtml = (data: any) => {
   const {
-    sufficient, requestedAmount, currency, bankNames = [],
-    reportId, generatedAt, accountHolderName, accounts = []
+    sufficient, requestedAmount, currency, reportId, generatedAt,
+    fullName, bankAccountName, purposeOfVerification, accounts = []
   } = data;
 
-  const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
+  const verifiedAccount = accounts[0] || {};
+  const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'USD' }).format(amount);
 
   const headerBackgroundColor = '#1E3A8A';
   const successColor = '#10B981';
@@ -43,37 +43,24 @@ const generateReportHtml = (data: any) => {
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Bank Balance Verification Report</title>
       <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: ${pageBackgroundColor}; } 
-        .page { padding: 20px; } 
-        .card { background-color: ${cardBackgroundColor}; border-radius: 12px; box-shadow: 0 3px 8px rgba(0,0,0,0.07); overflow: hidden; text-align: center; } 
-        .header { background-color: ${headerBackgroundColor}; padding: 24px 16px; text-align: center; color: #fff; } 
-        .header-title { font-size: 22px; font-weight: bold; margin: 0; } 
-        .header-subtitle { color: #e0e0e0; margin-top: 6px; font-size: 13px; } 
-        .badge { display:inline-block; margin:20px auto; border-radius:20px; padding:8px 20px; background-color:${sufficient ? successColor : errorColor}; color:#fff; font-weight:600; text-align:center; white-space:nowrap; } 
-        .amount-highlight { background-color: #f8f9fa; border-left: 4px solid ${sufficient ? successColor : errorColor}; padding: 18px; border-radius: 8px; text-align: center; margin: 20px 16px; } 
-        .amount-label { font-size: 14px; font-weight: 600; color: ${sufficient ? successColor : errorColor}; } 
-        .amount-text { font-size: 26px; font-weight: bold; color: #111; margin: 6px 0; } 
-        .amount-sub { color: #666; font-size: 13px; } 
-        .section-header { font-size: 17px; font-weight: bold; color: ${labelColor}; margin: 20px 16px 8px 16px; } 
-        .details-box { background-color: #f8f9fa; border-radius: 8px; margin: 0 16px 14px 16px; border: 1px solid #e5e7eb; } 
-        .details-row { display: flex; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid #eee; } 
-        .details-row:last-child { border-bottom: none; } 
-        .info-label { color: ${labelColor}; font-weight: 600; font-size: 13px; } 
-        .info-value { color: ${textColor}; font-size: 14px; text-align: right; } 
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: ${pageBackgroundColor}; }
+        .page { padding: 20px; }
+        .card { background-color: ${cardBackgroundColor}; border-radius: 12px; box-shadow: 0 3px 8px rgba(0,0,0,0.07); overflow: hidden; }
+        .header { background-color: ${headerBackgroundColor}; padding: 24px 16px; text-align: center; color: #fff; }
+        .header-title { font-size: 22px; font-weight: bold; margin: 0; }
+        .header-subtitle { color: #e0e0e0; margin-top: 6px; font-size: 13px; }
+        .badge { display:inline-block; margin:20px auto; border-radius:20px; padding:8px 20px; background-color:${sufficient ? successColor : errorColor}; color:#fff; font-weight:600; text-align:center; white-space:nowrap; }
+        .amount-highlight { background-color: #f8f9fa; border-left: 4px solid ${sufficient ? successColor : errorColor}; padding: 18px; border-radius: 8px; text-align: center; margin: 20px 16px; }
+        .amount-label { font-size: 14px; font-weight: 600; color: ${sufficient ? successColor : errorColor}; }
+        .amount-text { font-size: 26px; font-weight: bold; color: #111; margin: 6px 0; }
+        .amount-sub { color: #666; font-size: 13px; }
+        .section-header { font-size: 17px; font-weight: bold; color: ${labelColor}; margin: 20px 16px 8px 16px; text-align: left; }
+        .details-box { background-color: #f8f9fa; border-radius: 8px; margin: 0 16px 14px 16px; border: 1px solid #e5e7eb; }
+        .details-row { display: flex; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid #eee; }
+        .details-row:last-child { border-bottom: none; }
+        .info-label { color: ${labelColor}; font-weight: 600; font-size: 13px; }
+        .info-value { color: ${textColor}; font-size: 14px; text-align: right; }
         .footer { border-top: 1px solid #eee; margin-top: 30px; padding: 16px; color: #666; font-size: 12px; text-align: center; }
-        .empty-text { text-align: center; color: #777; padding: 12px 0; }
-        .account-header { 
-          background-color: #f0f7ff; 
-          padding: 8px 12px; 
-          border-top-left-radius: 8px;
-          border-top-right-radius: 8px;
-          border-bottom: 1px solid #e5e7eb;
-        }
-        .account-title {
-          font-size: 15px;
-          font-weight: 600;
-          color: #1E3A8A;
-        }
       </style>
     </head>
     <body>
@@ -81,79 +68,60 @@ const generateReportHtml = (data: any) => {
         <div class="card">
           <div class="header">
             <p class="header-title">Bank Balance Verification Report</p>
-            <p class="header-subtitle">Official verification document generated on ${new Date().toLocaleDateString("en-US")}</p>
+            <p class="header-subtitle">Official verification document generated on ${new Date(generatedAt).toLocaleDateString("en-US")}</p>
           </div>
-          <div class="badge">
-            ${sufficient ? '&#10003;' : '&#10007;'} ${sufficient ? 'VERIFIED' : 'INSUFFICIENT'}
+          <div style="text-align: center;">
+            <div class="badge">
+              ${sufficient ? '&#10003;' : '&#10007;'} ${sufficient ? 'VERIFIED' : 'INSUFFICIENT'}
+            </div>
           </div>
           <div class="amount-highlight">
             <div class="amount-label">Verification Amount</div>
             <div class="amount-text">${formatCurrency(requestedAmount)}</div>
-            <div class="amount-sub">As of ${new Date().toLocaleDateString("en-US")}</div>
+            <div class="amount-sub">As of ${new Date(generatedAt).toLocaleDateString("en-US")}</div>
           </div>
-          </div>
-          <div class="section-header">Account Holder Information</div>
+
+          <div class="section-header">Verification Details</div>
           <div class="details-box">
             <div class="details-row">
-              <span class="info-label">Account Holder Name</span>
-              <span class="info-value">${accountHolderName || '-'}</span>
+              <span class="info-label">Full Name</span>
+              <span class="info-value">${fullName || '-'}</span>
+            </div>
+            <div class="details-row">
+              <span class="info-label">Purpose</span>
+              <span class="info-value">${purposeOfVerification || '-'}</span>
             </div>
           </div>
 
-          <div class="section-header">Connected Account${accounts.length !== 1 ? 's' : ''} (${accounts.length})</div>
-          ${accounts.length === 0
-      ? `<div class="empty-text">No Account data available.</div>`
-      : accounts.map((acc: AccountDetails, index: number) => `
-              <div class="details-box" style="margin-top: ${index > 0 ? '12px' : '0'}">
-                <div class="account-header">
-                  <span class="account-title">Account ${index + 1}</span>
-                </div>
-                <div class="details-row">
-                  <span class="info-label">Bank Account Name</span>
-                  <span class="info-value">${acc.name || '-'}</span>
-                </div>
-                <div class="details-row">
-                  <span class="info-label">Bank</span>
-                  <span class="info-value">${acc.bankName || '-'}</span>
-                </div>
-                <div class="details-row">
-                  <span class="info-label">Account Type</span>
-                  <span class="info-value">${acc.type || '-'}</span>
-                </div>
-                <div class="details-row">
-                  <span class="info-label">Subtype</span>
-                  <span class="info-value">${acc.subtype || '-'}</span>
-                </div>
-                <div class="details-row" style="border-bottom: none;">
-                  <span class="info-label">Account Number (Last 4)</span>
-                  <span class="info-value">&#8226;&#8226;&#8226;&#8226; ${acc.maskedNumber || '-'}</span>
-                </div>
-              </div>
-            `).join('')}
-          <div class="section-header">Verification Details</div>
+          <div class="section-header">Verified Account</div>
+          <div class="details-box">
+            <div class="details-row">
+              <span class="info-label">Bank</span>
+              <span class="info-value">${verifiedAccount.bankName || '-'}</span>
+            </div>
+            <div class="details-row">
+              <span class="info-label">Account Name</span>
+              <span class="info-value">${bankAccountName || '-'}</span>
+            </div>
+            <div class="details-row">
+              <span class="info-label">Account Type</span>
+              <span class="info-value">${verifiedAccount.subtype || verifiedAccount.type || '-'}</span>
+            </div>
+            <div class="details-row" style="border-bottom: none;">
+              <span class="info-label">Account Number</span>
+              <span class="info-value">&#8226;&#8226;&#8226;&#8226; ${verifiedAccount.maskedNumber || '-'}</span>
+            </div>
+          </div>
+
+          <div class="section-header">Report Information</div>
           <div class="details-box">
             <div class="details-row">
               <span class="info-label">Report ID</span>
               <span class="info-value">${reportId || '-'}</span>
             </div>
-            <div class="details-row">
+            <div class="details-row" style="border-bottom: none;">
               <span class="info-label">Generated</span>
               <span class="info-value">${generatedAt ? new Date(generatedAt).toLocaleString() : '-'}</span>
-            </div>
-            <div class="details-row">
-              <span class="info-label">Status</span>
-              <span class="info-value" style="color: ${sufficient ? successColor : errorColor}; font-weight: bold;">${sufficient ? 'Verified' : 'Rejected'}</span>
-            </div>
-          </div>
-          <div class="section-header"></div>
-          <div class="details-box" style="background-color: #f0f9ff; border-left: 4px solid #3B82F6;">
-            <div class="details-row" style="border-bottom: none;">
-              <span class="info-value" style="text-align: left; flex: 1;">
-                ${sufficient
-      ? `This verification report confirms that ${accountHolderName} has verified funds of ${formatCurrency(requestedAmount)} in their ${accounts[0]?.type || 'N/A'} account ending in &#8226;&#8226;&#8226;&#8226; ${accounts[0]?.maskedNumber || 'N/A'} at ${accounts[0]?.bankName || 'N/A'} Bank.`
-      : `This verification report indicates that ${accountHolderName} has insufficient funds of ${formatCurrency(requestedAmount)} in their ${accounts[0]?.type || 'N/A'} account ending in &#8226;&#8226;&#8226;&#8226; ${accounts[0]?.maskedNumber || 'N/A'} at ${accounts[0]?.bankName || 'N/A'} Bank.`
-    }
-              </span>
             </div>
           </div>
 
@@ -165,31 +133,36 @@ const generateReportHtml = (data: any) => {
     </body>
     </html>
   `;
-}; export default function VerificationResultScreen() {
+};
+
+export default function VerificationResultScreen() {
   const params = useLocalSearchParams<{
     reportId?: string;
-    sufficient?: string; // boolean as string
+    sufficient?: string;
     requestedAmount?: string;
-    bankNames?: string; // comma-separated string
     userName?: string;
     generatedAt?: string;
-    accounts?: string; // JSON string of accounts
+    accounts?: string;
+    fullName?: string;
+    bankAccountName?: string;
+    purposeOfVerification?: string;
   }>();
 
   const { session } = useAuth();
 
-  // Parse values from params if present
-  const hasAllDataInParams = !!(params.sufficient && params.requestedAmount && params.bankNames && params.generatedAt && params.accounts);
+  const hasAllDataInParams = !!(params.sufficient && params.requestedAmount && params.generatedAt && params.accounts);
 
   const parsedData = hasAllDataInParams
     ? {
       sufficient: params.sufficient === 'true',
       requestedAmount: Number(params.requestedAmount),
-      bankNames: params.bankNames!.split(','),
-      userName: params.userName || session?.user?.name, // Use session user name if not in params
+      userName: params.userName || session?.user?.name,
       generatedAt: params.generatedAt,
-      reportId: params.reportId, // reportId might be present even if other data is
-      accounts: JSON.parse(params.accounts!), // Parse accounts JSON string
+      reportId: params.reportId,
+      accounts: JSON.parse(params.accounts!),
+      fullName: params.fullName,
+      bankAccountName: params.bankAccountName,
+      purposeOfVerification: params.purposeOfVerification,
     }
     : undefined;
 
@@ -198,20 +171,7 @@ const generateReportHtml = (data: any) => {
   );
 
   const reportData = parsedData || fetchedReportData;
-
-  const sufficient = reportData?.sufficient ?? false;
-  const requestedAmount = reportData?.requestedAmount ?? 0;
-  const bankNames = reportData?.bankNames ?? [];
-  const userName = reportData?.userName ?? session?.user?.name ?? ''; // Fallback to session user name
-  const generatedAt = reportData?.generatedAt;
-  const reportId = reportData?.reportId;
-  const currency = 'USD';
-  const accounts = reportData?.accounts ?? []; // <--- Add this
-
-  const formatCurrency = (amount: number) => {
-    if (isNaN(amount)) return '-';
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
-  };
+  const verifiedAccount = reportData?.accounts?.[0] || {};
 
   const handleDownloadReport = async () => {
     if (!reportData) {
@@ -219,204 +179,101 @@ const generateReportHtml = (data: any) => {
       return;
     }
     try {
-      const htmlContent = generateReportHtml({
-        sufficient: reportData.sufficient,
-        requestedAmount: reportData.requestedAmount,
-        currency,
-        bankNames: reportData.bankNames ?? [],
-        reportId: reportData.reportId,
-        generatedAt: reportData.generatedAt,
-        accountHolderName: userName,
-        accounts: reportData.accounts ?? [], // <--- Add this
-      });
-
-      const fileUri = (FileSystem.documentDirectory ?? '') + 'verification-report.html';
-
-      await FileSystem.writeAsStringAsync(fileUri, htmlContent, {
-        encoding: 'utf8',
-      });
+      const htmlContent = generateReportHtml(reportData);
+      const fileUri = (FileSystem.documentDirectory || '') + `verification-report-${reportData.reportId}.html`;
+      await FileSystem.writeAsStringAsync(fileUri, htmlContent, { encoding: 'utf8' });
 
       if (!(await Sharing.isAvailableAsync())) {
         Alert.alert('Sharing is not available on this device');
         return;
       }
-
-      await Sharing.shareAsync(fileUri, {
-        mimeType: 'text/html',
-        dialogTitle: 'Download Verification Report',
-      });
-    } catch (error) {
-      console.error('Error generating or sharing report:', error);
+      await Sharing.shareAsync(fileUri, { mimeType: 'text/html', dialogTitle: 'Download Verification Report' });
+    } catch (e) {
+      console.error('Error generating or sharing report:', e);
       Alert.alert('Error', 'Failed to generate report. Please try again.');
     }
   };
 
   if (isLoading && !parsedData) {
-    return (
-      <View style={styles.pageContainer_center}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
+    return <View style={styles.pageContainer_center}><ActivityIndicator size="large" /></View>;
   }
 
   if (isError && !parsedData) {
-    return (
-      <View style={styles.pageContainer_center}>
-        <ThemedText>Error loading report: {error?.message}</ThemedText>
-      </View>
-    );
+    return <View style={styles.pageContainer_center}><ThemedText>Error loading report: {error?.message}</ThemedText></View>;
   }
 
   if (!reportData) {
-    return (
-      <View style={styles.pageContainer_center}>
-        <ThemedText>Report not found.</ThemedText>
-      </View>
-    );
+    return <View style={styles.pageContainer_center}><ThemedText>Report not found.</ThemedText></View>;
   }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors.dark.background }} edges={['top', 'left', 'right']}>
       <View style={styles.pageContainer}>
         <ScrollView style={styles.page}>
-          <Stack.Screen options={{ title: 'Bank Balance Verification Report' }} />
-          {/* Single unified card */}
+          <Stack.Screen options={{ title: 'Verification Report' }} />
           <View style={styles.card}>
-            {/* Header */}
             <View style={styles.header}>
               <ThemedText style={styles.headerTitle}>Bank Balance Verification Report</ThemedText>
-              <ThemedText style={styles.headerSubtitle}>
-                Official verification document generated on {new Date().toLocaleDateString("en-US")}
-              </ThemedText>
             </View>
-
-            <View style={styles.divider} />
-
-            {/* Status Badge */}
-            <View style={[styles.badge, { backgroundColor: sufficient ? '#10B981' : '#EF4444' }]}>
+            <View style={[styles.badge, { backgroundColor: reportData.sufficient ? '#10B981' : '#EF4444' }]}>
               <ThemedText style={styles.badgeText}>
-                {sufficient ? '✓ VERIFIED' : '✕ INSUFFICIENT'}
+                {reportData.sufficient ? '✓ VERIFIED' : '✕ INSUFFICIENT'}
               </ThemedText>
             </View>
 
-            {/* Summary Section */}
-            <View
-              style={[
-                styles.amountHighlight,
-                { borderLeftColor: sufficient ? '#10B981' : '#EF4444' },
-              ]}
-            >
-              <Ionicons
-                name={sufficient ? 'checkmark-circle' : 'alert-circle'}
-                size={28}
-                color={sufficient ? '#10B981' : '#EF4444'}
-                style={{ marginBottom: 6 }}
-              />
-              <ThemedText
-                style={[
-                  styles.amountLabel,
-                  { color: sufficient ? '#10B981' : '#EF4444' },
-                ]}
-              >
-                Verification Amount
-              </ThemedText>
-
+            <View style={[styles.amountHighlight, { borderLeftColor: reportData.sufficient ? '#10B981' : '#EF4444' }]}>
+              <ThemedText style={styles.amountLabel}>Verification Amount</ThemedText>
               <ThemedText style={styles.amountText}>
-                {formatCurrency(requestedAmount)}
-              </ThemedText>
-
-              <ThemedText style={styles.amountSub}>
-                As of {new Date().toLocaleDateString("en-US")}
+                {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(reportData.requestedAmount)}
               </ThemedText>
             </View>
 
-            {/* Account Holder Information Section */}
-            <ThemedText style={styles.sectionHeader}>Account Holder Information</ThemedText>
-            <View style={styles.accountBox}>
-              <View style={styles.accountRow}>
-                <ThemedText style={styles.infoLabel}>Account Holder Name</ThemedText>
-                <ThemedText style={styles.infoValue}>{userName}</ThemedText>
-              </View>
-            </View>
-
-            {/* Connected Accounts Section */}
-            <ThemedText style={styles.sectionHeader}>
-              Connected Account{accounts.length !== 1 ? 's' : ''} ({accounts.length})
-            </ThemedText>
-            {accounts.length === 0 ? (
-              <ThemedText style={styles.emptyText}>No Account data available.</ThemedText>
-            ) : (
-              accounts.map((acc: any, index: number) => (
-                <View key={acc.plaidAccountId} style={[styles.accountBox, index > 0 && { marginTop: 12 }]}>
-                  <View style={styles.accountHeaderRow}>
-                    <ThemedText style={styles.accountHeaderText}>Account {index + 1}</ThemedText>
-                  </View>
-                  <View style={styles.accountRow}>
-                    <ThemedText style={styles.infoLabel}>Bank Account Name</ThemedText>
-                    <ThemedText style={styles.infoValue}>{acc.name || '-'}</ThemedText>
-                  </View>
-                  <View style={styles.accountRow}>
-                    <ThemedText style={styles.infoLabel}>Bank</ThemedText>
-                    <ThemedText style={styles.infoValue}>{acc.bankName || '-'}</ThemedText>
-                  </View>
-                  <View style={styles.accountRow}>
-                    <ThemedText style={styles.infoLabel}>Account Type</ThemedText>
-                    <ThemedText style={styles.infoValue}>{acc.type || '-'}</ThemedText>
-                  </View>
-                  <View style={styles.accountRow}>
-                    <ThemedText style={styles.infoLabel}>Subtype</ThemedText>
-                    <ThemedText style={styles.infoValue}>{acc.subtype || '-'}</ThemedText>
-                  </View>
-                  <View style={[styles.accountRow, { borderBottomWidth: 0 }]}>
-                    <ThemedText style={styles.infoLabel}>Account Number (Last 4)</ThemedText>
-                    <ThemedText style={styles.infoValue}>•••• {acc.maskedNumber || '-'}</ThemedText>
-                  </View>
-                </View>
-              ))
-            )}
-
-            {/* Verification Details Section */}
             <ThemedText style={styles.sectionHeader}>Verification Details</ThemedText>
-            <View style={styles.accountBox}>
-              <View style={styles.accountRow}>
-                <ThemedText style={styles.infoLabel}>Report ID</ThemedText>
-                <ThemedText style={styles.infoValue} selectable>{reportId || '-'}</ThemedText>
+            <View style={styles.detailsBox}>
+              <View style={styles.detailsRow}>
+                <ThemedText style={styles.infoLabel}>Full Name</ThemedText>
+                <ThemedText style={styles.infoValue}>{reportData.fullName || '-'}</ThemedText>
               </View>
-              <View style={styles.accountRow}>
+              <View style={[styles.detailsRow, { borderBottomWidth: 0 }]}>
+                <ThemedText style={styles.infoLabel}>Purpose</ThemedText>
+                <ThemedText style={styles.infoValue}>{reportData.purposeOfVerification || '-'}</ThemedText>
+              </View>
+            </View>
+
+            <ThemedText style={styles.sectionHeader}>Verified Account</ThemedText>
+            <View style={styles.detailsBox}>
+              <View style={styles.detailsRow}>
+                <ThemedText style={styles.infoLabel}>Bank</ThemedText>
+                <ThemedText style={styles.infoValue}>{verifiedAccount.bankName || '-'}</ThemedText>
+              </View>
+              <View style={styles.detailsRow}>
+                <ThemedText style={styles.infoLabel}>Account Name</ThemedText>
+                <ThemedText style={styles.infoValue}>{reportData.bankAccountName || '-'}</ThemedText>
+              </View>
+              <View style={styles.detailsRow}>
+                <ThemedText style={styles.infoLabel}>Account Type</ThemedText>
+                <ThemedText style={styles.infoValue}>{verifiedAccount.subtype || verifiedAccount.type || '-'}</ThemedText>
+              </View>
+              <View style={[styles.detailsRow, { borderBottomWidth: 0 }]}>
+                <ThemedText style={styles.infoLabel}>Account Number</ThemedText>
+                <ThemedText style={styles.infoValue}>•••• {verifiedAccount.maskedNumber || '-'}</ThemedText>
+              </View>
+            </View>
+
+            <ThemedText style={styles.sectionHeader}>Report Information</ThemedText>
+            <View style={styles.detailsBox}>
+              <View style={styles.detailsRow}>
+                <ThemedText style={styles.infoLabel}>Report ID</ThemedText>
+                <ThemedText style={styles.infoValue} selectable>{reportData.reportId || '-'}</ThemedText>
+              </View>
+              <View style={[styles.detailsRow, { borderBottomWidth: 0 }]}>
                 <ThemedText style={styles.infoLabel}>Generated</ThemedText>
                 <ThemedText style={styles.infoValue}>
-                  {generatedAt ? new Date(generatedAt).toLocaleString() : '-'}
-                </ThemedText>
-              </View>
-              <View style={[styles.accountRow, { borderBottomWidth: 0 }]}>
-                <ThemedText style={styles.infoLabel}>Status</ThemedText>
-                <ThemedText style={{ color: sufficient ? '#10B981' : '#EF4444', fontWeight: 'bold' }}>
-                  {sufficient ? 'Verified' : 'Rejected'}
+                  {reportData.generatedAt ? new Date(reportData.generatedAt).toLocaleString() : '-'}
                 </ThemedText>
               </View>
             </View>
-
-            {/* Summary Note */}
-            <View style={styles.noteBox}>
-              <Ionicons
-                name={sufficient ? 'checkmark-circle' : 'close-circle'}
-                size={22}
-                color={sufficient ? '#10B981' : '#EF4444'}
-                style={{ marginRight: 8 }}
-              />
-              <ThemedText style={styles.noteText}>
-                {sufficient
-                  ? `This verification report confirms that ${userName} has verified funds of ${formatCurrency(requestedAmount)} in their ${accounts[0]?.type || 'N/A'} account ending in ${accounts[0]?.maskedNumber || 'N/A'} at ${accounts[0]?.bankName || 'N/A'} Bank.`
-                  : `This verification report indicates that ${userName} has insufficient funds of ${formatCurrency(requestedAmount)} in their ${accounts[0]?.type || 'N/A'} account ending in ${accounts[0]?.maskedNumber || 'N/A'} at ${accounts[0]?.bankName || 'N/A'} Bank.`}
-              </ThemedText>
-            </View>
-
-            {/* Footer */}
-            <View style={[styles.footer, { marginBottom: 80 }]}>
-              <ThemedText style={styles.footerText}>
-                This report was automatically generated by the Banking Verification System.
-              </ThemedText>
-            </View>
+            <View style={{ height: 80 }} />
           </View>
         </ScrollView>
         <TouchableOpacity style={styles.fab} onPress={handleDownloadReport}>
@@ -428,140 +285,21 @@ const generateReportHtml = (data: any) => {
 }
 
 const styles = StyleSheet.create({
-  pageContainer: {
-    flex: 1,
-  },
-  accountHeaderRow: {
-    backgroundColor: '#f0f7ff',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  accountHeaderText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1E3A8A',
-  },
-  pageContainer_center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  page: {
-    flex: 1,
-    backgroundColor: '#eaeef3',
-    paddingVertical: 20,
-    paddingHorizontal: 12,
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: 0.07,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  header: {
-    backgroundColor: '#1E3A8A',
-    paddingVertical: 24,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-  },
+  pageContainer: { flex: 1 },
+  pageContainer_center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  page: { flex: 1, backgroundColor: '#eaeef3', paddingVertical: 20, paddingHorizontal: 12 },
+  card: { backgroundColor: '#fff', borderRadius: 12, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.07, shadowOffset: { width: 0, height: 3 }, shadowRadius: 8, elevation: 3 },
+  header: { backgroundColor: '#1E3A8A', paddingVertical: 24, paddingHorizontal: 16, alignItems: 'center' },
   headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#fff' },
-  headerSubtitle: { color: '#e0e0e0', marginTop: 6, fontSize: 13 },
-  divider: {
-    height: 1,
-    backgroundColor: '#e5e7eb',
-  },
-  badge: {
-    alignSelf: 'center',
-    marginTop: 20,
-    borderRadius: 20,
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-  },
+  badge: { alignSelf: 'center', marginTop: 20, borderRadius: 20, paddingHorizontal: 20, paddingVertical: 8 },
   badgeText: { color: '#fff', fontWeight: '600' },
-
-  /** Neutral summary box **/
-  amountHighlight: {
-    backgroundColor: '#f8f9fa',
-    borderLeftWidth: 4,
-    padding: 18,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginHorizontal: 16,
-    marginVertical: 20,
-  },
+  amountHighlight: { backgroundColor: '#f8f9fa', borderLeftWidth: 4, padding: 18, borderRadius: 8, alignItems: 'center', marginHorizontal: 16, marginVertical: 20 },
   amountLabel: { fontSize: 14, fontWeight: '600' },
   amountText: { fontSize: 26, fontWeight: 'bold', color: '#111', marginVertical: 6 },
-  amountSub: { color: '#666', fontSize: 13, textAlign: 'center' },
-
-  sectionHeader: {
-    fontSize: 17,
-    fontWeight: 'bold',
-    color: '#1E3A8A',
-    marginHorizontal: 16,
-    marginBottom: 8,
-    marginTop: 10,
-  },
-  emptyText: { textAlign: 'center', color: '#777', marginVertical: 12 },
-  accountBox: {
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    marginHorizontal: 16,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  accountRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
+  sectionHeader: { fontSize: 17, fontWeight: 'bold', color: '#1E3A8A', marginHorizontal: 16, marginBottom: 8, marginTop: 10 },
+  detailsBox: { backgroundColor: '#f8f9fa', borderRadius: 8, marginHorizontal: 16, marginBottom: 14, borderWidth: 1, borderColor: '#e5e7eb' },
+  detailsRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: '#eee' },
   infoLabel: { color: '#1E3A8A', fontWeight: '600', fontSize: 13 },
   infoValue: { color: '#333', fontSize: 14, flex: 1, textAlign: 'right' },
-  noteBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#f0f9ff',
-    padding: 14,
-    borderLeftWidth: 4,
-    borderLeftColor: '#3B82F6',
-    borderRadius: 8,
-    marginHorizontal: 16,
-    marginTop: 20,
-  },
-  noteText: { flex: 1, fontSize: 13.5, color: '#333' },
-  footer: {
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    marginTop: 30,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-  },
-  footerText: { color: '#666', fontSize: 12, textAlign: 'center' },
-  fab: {
-    position: 'absolute',
-    width: 60,
-    height: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-    right: 20,
-    bottom: 60,
-    backgroundColor: '#1E3A8A',
-    borderRadius: 30,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 5,
-  },
+  fab: { position: 'absolute', width: 60, height: 60, alignItems: 'center', justifyContent: 'center', right: 20, bottom: 60, backgroundColor: '#1E3A8A', borderRadius: 30, elevation: 8, shadowColor: '#000', shadowOpacity: 0.3, shadowOffset: { width: 0, height: 4 }, shadowRadius: 5 },
 });
