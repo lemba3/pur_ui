@@ -54,6 +54,7 @@ export default function VerificationResultScreen() {
     fullName?: string;
     bankAccountName?: string;
     purposeOfVerification?: string;
+    requestId: string;
   }>();
 
   const { session } = useAuth();
@@ -71,6 +72,7 @@ export default function VerificationResultScreen() {
       fullName: params.fullName,
       bankAccountName: params.bankAccountName,
       purposeOfVerification: params.purposeOfVerification,
+      requestId: params.requestId || '',
     }
     : undefined;
 

@@ -42,28 +42,28 @@ export const useReports = () => {
   };
 };
 
-const generateReport = async ({ 
-  amount, 
-  plaidItemId, 
-  accountId, 
-  fullName, 
-  bankAccountName, 
-  purposeOfVerification 
-}: { 
-  amount: number; 
-  plaidItemId: string; 
-  accountId: string; 
-  fullName: string; 
-  bankAccountName: string; 
-  purposeOfVerification: string; 
+const generateReport = async ({
+  amount,
+  plaidItemId,
+  accountId,
+  fullName,
+  bankAccountName,
+  purposeOfVerification
+}: {
+  amount: number;
+  plaidItemId: string;
+  accountId: string;
+  fullName: string;
+  bankAccountName: string;
+  purposeOfVerification: string;
 }) => {
-  const response = await api.post('/plaid/generate-report', { 
-    amount, 
-    itemId: plaidItemId, 
-    accountId, 
-    fullName, 
-    bankAccountName, 
-    purposeOfVerification 
+  const response = await api.post('/plaid/generate-report', {
+    amount,
+    itemId: plaidItemId,
+    accountId,
+    fullName,
+    bankAccountName,
+    purposeOfVerification
   });
   return response.data;
 };
@@ -89,6 +89,7 @@ export const useGenerateReport = () => {
           userName: data.fullName, // Use fullName from the form
           generatedAt: data.generatedAt,
           accounts: JSON.stringify(data.accounts),
+          requestId: data.requestIds[0] || '',
           // Pass new fields
           fullName: data.fullName,
           bankAccountName: data.bankAccountName,
