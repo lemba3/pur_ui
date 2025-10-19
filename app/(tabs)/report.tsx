@@ -72,11 +72,10 @@ export default function ReportScreen() {
             <ThemedText style={styles.reportDetailText}>{item?.bankNames?.length > 0 ? item.bankNames[0] : 'N/A'}</ThemedText>
           </View>
           <View style={styles.reportDetail}>
-            <MaterialCommunityIcons name="bank-outline" size={20} color={Colors.dark.icon} />
+            <MaterialCommunityIcons name="wallet-outline" size={20} color={Colors.dark.icon} />
             <View style={styles.reportDetailView}><ThemedText style={styles.reportKeyText} type="defaultSemiBold">Acc Type:</ThemedText></View>
             <ThemedText style={styles.reportDetailText}>
               {item.plaidItem?.accounts?.find(acc => acc.id === item.accountId)?.subtype || 'N/A'}
-              {/* ${item.id} */}
             </ThemedText>
           </View>
           <View style={styles.reportDetail}>
@@ -84,6 +83,13 @@ export default function ReportScreen() {
             <View style={styles.reportDetailView}><ThemedText style={styles.reportKeyText} type="defaultSemiBold">Date:</ThemedText></View>
             <ThemedText style={styles.reportDetailText}>{new Date(item.createdAt).toLocaleDateString('en-US')}</ThemedText>
           </View>
+          {/* Chevron icon indicating clickability */}
+          <MaterialCommunityIcons
+            name="chevron-right"
+            size={24}
+            color={Colors.dark.icon}
+            style={{ position: 'absolute', right: 16, top: '50%', transform: [{ translateY: -12 }] }}
+          />
         </ThemedView>
       </TouchableOpacity>
     );

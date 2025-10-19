@@ -419,14 +419,23 @@ export default function VerificationResultScreen() {
                 </ThemedText>
               </ThemedText>
             </View>
-            <View style={styles.qrCodeContainer}>
+            {/* <View style={styles.qrCodeContainer}>
               <QRCode
                 value={reportData.requestId || 'no-request-id'}
                 size={90}
                 getRef={(c) => (qrCodeRef = c)}
               />
               <ThemedText style={styles.qrCodeText}>Scan to verify</ThemedText>
-            </View>
+            </View> */}
+          </View>
+
+          <View style={[styles.qrCodeContainer, { marginTop: 20 }]}>
+            <QRCode
+              value={reportData.requestId || 'no-request-id'}
+              size={90}
+              getRef={(c) => (qrCodeRef = c)}
+            />
+            <ThemedText style={styles.qrCodeText}>Scan to verify</ThemedText>
           </View>
 
           {/* Note Box */}

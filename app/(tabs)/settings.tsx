@@ -1,5 +1,6 @@
 import { StyleSheet, View, TouchableOpacity, Text } from 'react-native';
 import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ComponentProps } from 'react';
@@ -17,9 +18,10 @@ interface SettingButton {
 
 export default function SettingsScreen() {
   const { signOut } = useAuth();
+  const router = useRouter();
 
   const myButtons: SettingButton[] = [
-    { title: 'Profile', icon: 'account-outline', onPress: () => { /* Navigate to profile screen */ } },
+    { title: 'Profile', icon: 'account-outline', onPress: () => router.push('/profile') },
     { title: 'Privacy Policy', icon: 'shield-outline', onPress: () => { /* Navigate to privacy policy */ } },
     { title: 'About', icon: 'information-outline', onPress: () => { /* Navigate to about screen */ } },
   ];
