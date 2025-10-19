@@ -1,14 +1,21 @@
 import { createContext, useState, useEffect, useContext } from 'react';
+import { Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import axios, { isAxiosError } from 'axios';
 import { EXPO_PUBLIC_BASE_API_URL } from '@/constants/my-constants';
-import api, { setOnTokenRefresh } from '@/lib/api'; // Import api and setOnTokenRefresh
-import * as Google from 'expo-auth-session/providers/google';
-import * as WebBrowser from 'expo-web-browser';
-import { makeRedirectUri } from 'expo-auth-session';
+import api, { setOnTokenRefresh } from '@/lib/api';
+import {
+  GoogleSignin,
+  statusCodes,
+} from '@react-native-google-signin/google-signin';
 
-WebBrowser.maybeCompleteAuthSession();
+// Configure Google Sign In
+GoogleSignin.configure({
+  webClientId: process.env.EXPO_PUBLIC_WEB_CLIENT_ID,
+  forceCodeForRefreshToken: true, // Forces account picker every time
+  offlineAccess: true // Required for forceCodeForRefreshToken to work
+});
 
 interface Session {
   user: {
@@ -53,19 +60,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [authMethod, setAuthMethod] = useState<'email' | 'google' | null>(null);
   const router = useRouter();
 
-  // TODO: Replace with your own client IDs
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    clientId: process.env.EXPO_PUBLIC_WEB_CLIENT_ID, // This is your web client ID
-    androidClientId: process.env.EXPO_PUBLIC_ANDROID_CLIENT_ID, // This is your android client ID
-    iosClientId: process.env.EXPO_PUBLIC_IOS_CLIENT_ID, // This is your iOS client ID
-  });
-
+  // Debug log the configuration once
   useEffect(() => {
-    if (response?.type === 'success') {
-      const { id_token } = response.params;
-      handleGoogleSignIn(id_token);
-    }
-  }, [response]);
+    console.log('Google Auth Configuration:', {
+      webClientId: process.env.EXPO_PUBLIC_WEB_CLIENT_ID?.slice(0, 10) + '...',
+      androidClientId: process.env.EXPO_PUBLIC_ANDROID_CLIENT_ID?.slice(0, 10) + '...',
+      platform: Platform.OS
+    });
+  }, []);
 
   const handleGoogleSignIn = async (idToken: string) => {
     setIsAuthenticating(true);
@@ -144,15 +146,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithGoogle = async () => {
+    setIsAuthenticating(true);
     setAuthMethod('google');
-    await promptAsync();
+    try {
+      await GoogleSignin.hasPlayServices();
+      await GoogleSignin.signIn();
+      const tokens = await GoogleSignin.getTokens();
+      // console.log('Tokens:', tokens);
+
+      if (tokens.idToken) {
+        await handleGoogleSignIn(tokens.idToken);
+      } else {
+        throw new Error('No ID token received');
+      }
+    } catch (error: any) {
+      console.error('Google Sign In Error:', error);
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        console.log('User cancelled the login flow');
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        console.log('Sign in is in progress');
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        alert('Play services not available');
+      } else {
+        // handle this later why this error ERROR  Google Sign In Error: {"code": "getTokens", "fullError": [Error: getTokens requires a user to be signed in], "message": "getTokens requires a user to be signed in"}
+        // alert('Something went wrong: ' + error.message);
+      }
+      setIsAuthenticating(false);
+      setAuthMethod(null);
+    }
   };
 
   const signOut = async () => {
-    await SecureStore.deleteItemAsync('session');
-    setSession(null);
-    // Clear the default header
-    delete api.defaults.headers.common['Authorization'];
+    try {
+      // Try to sign out from Google
+      try {
+        await GoogleSignin.signOut();
+      } catch (error) {
+        // Ignore Google sign out errors
+        console.log('Google sign out error (non-critical):', error);
+      }
+      // Clear local session
+      await SecureStore.deleteItemAsync('session');
+      setSession(null);
+      // Clear the default header
+      delete api.defaults.headers.common['Authorization'];
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
   };
 
   const signUp = async (email: string, password: string, name: string) => {
