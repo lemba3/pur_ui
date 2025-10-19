@@ -16,6 +16,13 @@ interface Report {
   requestedAmount: number;
   bankNames: string[];
   createdAt: string;
+  accountId: string;
+  plaidItem?: {
+    accounts?: {
+      id: string;
+      subtype?: string;
+    }[];
+  };
 }
 
 export default function ReportScreen() {
@@ -42,36 +49,45 @@ export default function ReportScreen() {
     });
   };
 
-  const renderItem = ({ item }: { item: Report }) => (
-    <TouchableOpacity onPress={() => handleViewReport(item.id)} style={styles.reportItemContainer}>
-      <ThemedView style={styles.reportItem}>
-        <View style={styles.reportDetail}>
-          <MaterialCommunityIcons name="cash-multiple" size={20} color={Colors.dark.icon} />
-          <View style={styles.reportDetailView}><ThemedText style={styles.reportKeyText} type="defaultSemiBold">Amount:</ThemedText></View>
-          <ThemedText style={styles.reportDetailText}>${item.requestedAmount.toFixed(2)}</ThemedText>
-        </View>
-        <View style={styles.reportDetail}>
-          <MaterialCommunityIcons
-            name={item.sufficient ? "check-circle-outline" : "close-circle-outline"}
-            size={20}
-            color={item.sufficient ? 'green' : 'red'}
-          />
-          <View style={styles.reportDetailView}><ThemedText style={styles.reportKeyText} type="defaultSemiBold">Sufficient:</ThemedText></View>
-          <ThemedText style={styles.reportDetailText}>{item.sufficient ? 'Yes' : 'No'}</ThemedText>
-        </View>
-        <View style={styles.reportDetail}>
-          <MaterialCommunityIcons name="bank-outline" size={20} color={Colors.dark.icon} />
-          <View style={styles.reportDetailView}><ThemedText style={styles.reportKeyText} type="defaultSemiBold">Bank:</ThemedText></View>
-          <ThemedText style={styles.reportDetailText}>{item?.bankNames?.length > 0 ? item.bankNames[0] : 'N/A'}</ThemedText>
-        </View>
-        <View style={styles.reportDetail}>
-          <MaterialCommunityIcons name="calendar-month-outline" size={20} color={Colors.dark.icon} />
-          <View style={styles.reportDetailView}><ThemedText style={styles.reportKeyText} type="defaultSemiBold">Date:</ThemedText></View>
-          <ThemedText style={styles.reportDetailText}>{new Date(item.createdAt).toLocaleDateString('en-US')}</ThemedText>
-        </View>
-      </ThemedView>
-    </TouchableOpacity>
-  );
+  const renderItem = ({ item }: { item: Report }) => {
+    return (
+      <TouchableOpacity onPress={() => handleViewReport(item.id)} style={styles.reportItemContainer}>
+        <ThemedView style={styles.reportItem}>
+          <View style={styles.reportDetail}>
+            <MaterialCommunityIcons name="cash-multiple" size={20} color={Colors.dark.icon} />
+            <View style={styles.reportDetailView}><ThemedText style={styles.reportKeyText} type="defaultSemiBold">Amount:</ThemedText></View>
+            <ThemedText style={styles.reportDetailText}>${item.requestedAmount.toFixed(2)}</ThemedText>
+          </View>
+          <View style={styles.reportDetail}>
+            <MaterialCommunityIcons
+              name={item.sufficient ? "check-circle-outline" : "close-circle-outline"}
+              size={20}
+              color={item.sufficient ? 'green' : 'red'} />
+            <View style={styles.reportDetailView}><ThemedText style={styles.reportKeyText} type="defaultSemiBold">Sufficient:</ThemedText></View>
+            <ThemedText style={styles.reportDetailText}>{item.sufficient ? 'Yes' : 'No'}</ThemedText>
+          </View>
+          <View style={styles.reportDetail}>
+            <MaterialCommunityIcons name="bank-outline" size={20} color={Colors.dark.icon} />
+            <View style={styles.reportDetailView}><ThemedText style={styles.reportKeyText} type="defaultSemiBold">Bank:</ThemedText></View>
+            <ThemedText style={styles.reportDetailText}>{item?.bankNames?.length > 0 ? item.bankNames[0] : 'N/A'}</ThemedText>
+          </View>
+          <View style={styles.reportDetail}>
+            <MaterialCommunityIcons name="bank-outline" size={20} color={Colors.dark.icon} />
+            <View style={styles.reportDetailView}><ThemedText style={styles.reportKeyText} type="defaultSemiBold">Acc Type:</ThemedText></View>
+            <ThemedText style={styles.reportDetailText}>
+              {item.plaidItem?.accounts?.find(acc => acc.id === item.accountId)?.subtype || 'N/A'}
+              {/* ${item.id} */}
+            </ThemedText>
+          </View>
+          <View style={styles.reportDetail}>
+            <MaterialCommunityIcons name="calendar-month-outline" size={20} color={Colors.dark.icon} />
+            <View style={styles.reportDetailView}><ThemedText style={styles.reportKeyText} type="defaultSemiBold">Date:</ThemedText></View>
+            <ThemedText style={styles.reportDetailText}>{new Date(item.createdAt).toLocaleDateString('en-US')}</ThemedText>
+          </View>
+        </ThemedView>
+      </TouchableOpacity>
+    );
+  };
 
   if (status === 'pending') {
     return (

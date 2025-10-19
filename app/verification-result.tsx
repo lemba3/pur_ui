@@ -9,36 +9,218 @@ import * as Sharing from 'expo-sharing';
 import { useGetReport } from '@/hooks/report';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
+import * as Print from 'expo-print';
+import QRCode from 'react-native-qrcode-svg';
 
-interface AccountDetails {
-  plaidAccountId: string;
-  name: string;
-  bankName: string;
-  type: string;
-  subtype: string;
-  maskedNumber: string;
-}
-
-const generateReportHtml = (data: any) => {
+const generateReportHtml = (data: any, qrCodeDataUrl: string) => {
   const {
-    sufficient, requestedAmount, currency, reportId, generatedAt,
-    fullName, bankAccountName, purposeOfVerification, accounts = []
+    sufficient, requestedAmount, reportId, generatedAt,
+    fullName, bankAccountName, purposeOfVerification, accounts = [],
+    requestId,
   } = data;
 
   const verifiedAccount = accounts[0] || {};
-  const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'USD' }).format(amount);
+  const formatCurrency = (amount: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+  const generatedDate = generatedAt ? new Date(generatedAt) : new Date();
 
   const headerBackgroundColor = '#1E3A8A';
   const successColor = '#10B981';
   const errorColor = '#EF4444';
-  const pageBackgroundColor = '#eaeef3';
-  const cardBackgroundColor = '#fff';
+  const pageBackgroundColor = '#f9f9f9';
+  const cardBackgroundColor = '#ffffff';
   const textColor = '#333';
   const labelColor = '#1E3A8A';
+  const infoBoxBg = '#f8f9fa';
 
   return `
     <!DOCTYPE html>
     <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Verification Report</title>
+      <style>
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+          background-color: ${pageBackgroundColor};
+          margin: 0;
+          padding: 20px;
+        }
+        .header {
+          background-color: ${headerBackgroundColor};
+          padding: 30px 16px;
+          border-radius: 10px;
+          text-align: center;
+          color: white;
+        }
+        .header-title {
+          font-size: 24px;
+          font-weight: bold;
+        }
+        .header-subtitle {
+          font-size: 13px;
+          margin-top: 6px;
+          color: #e0e7ff;
+        }
+        .card {
+          background-color: ${cardBackgroundColor};
+          margin-top: 16px;
+          border-radius: 10px;
+          padding: 20px;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .badge {
+          align-self: flex-start;
+          border-radius: 20px;
+          padding: 6px 14px;
+          margin-bottom: 20px;
+          color: white;
+          font-weight: bold;
+          font-size: 14px;
+          background-color: ${sufficient ? successColor : errorColor};
+          display: inline-block;
+        }
+        .section-header {
+          font-size: 18px;
+          font-weight: bold;
+          color: ${labelColor};
+          margin-bottom: 10px;
+        }
+        .info-grid {
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: space-between;
+        }
+        .info-item {
+          width: 48%;
+          background-color: ${infoBoxBg};
+          padding: 12px;
+          border-radius: 8px;
+          border-left: 4px solid ${labelColor};
+          margin-bottom: 14px;
+          box-sizing: border-box;
+        }
+        .info-label {
+          font-weight: bold;
+          color: ${labelColor};
+          font-size: 13px;
+        }
+        .info-value {
+          color: ${textColor};
+          font-size: 15px;
+          margin-top: 4px;
+        }
+        .amount-highlight {
+          border-radius: 10px;
+          padding: 20px;
+          text-align: center;
+          margin: 20px 0;
+          background-color: ${sufficient ? successColor : errorColor};
+          color: white;
+        }
+        .amount-label {
+          font-size: 15px;
+          font-weight: 600;
+        }
+        .amount-value {
+          font-size: 32px;
+          font-weight: bold;
+          margin: 6px 0;
+        }
+        .amount-date {
+          color: #f0fdf4;
+        }
+        .details-section {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: 10px;
+        }
+        .detail-box {
+          font-size: 14px;
+          color: ${textColor};
+        }
+        .detail-box p {
+          margin: 4px 0;
+        }
+        .bold {
+          font-weight: bold;
+          color: #111;
+        }
+        .qr-code {
+          text-align: center;
+        }
+        .qr-code img {
+          width: 90px;
+          height: 90px;
+        }
+        .qr-code-text {
+          font-size: 12px;
+          color: #666;
+          margin-top: 4px;
+        }
+        .note-box {
+          background-color: #f0f9ff;
+          border-left: 4px solid #3B82F6;
+          padding: 12px;
+          border-radius: 8px;
+          margin-top: 20px;
+          font-size: 14px;
+          color: ${textColor};
+        }
+        .footer {
+          margin-top: 20px;
+          padding: 20px 16px;
+          border-top: 1px solid #eee;
+          text-align: center;
+          color: #666;
+          font-size: 12px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <div class="header-title">Bank Account Verification Report</div>
+        <div class="header-subtitle">Official verification document generated on ${generatedDate.toLocaleDateString()}</div>
+      </div>
+      <div class="card">
+        <div class="badge">${sufficient ? '✓ VERIFIED' : '✕ INSUFFICIENT'}</div>
+        <div class="section-header">Account Holder Information</div>
+        <div class="info-grid">
+          <div class="info-item"><div class="info-label">Account Holder Name</div><div class="info-value">${fullName || '-'}</div></div>
+          <div class="info-item"><div class="info-label">Bank Account Name</div><div class="info-value">${bankAccountName || '-'}</div></div>
+          <div class="info-item"><div class="info-label">Bank</div><div class="info-value">${verifiedAccount.bankName || '-'}</div></div>
+          <div class="info-item"><div class="info-label">Account Type</div><div class="info-value">${verifiedAccount.subtype || verifiedAccount.type || '-'}</div></div>
+          <div class="info-item"><div class="info-label">Account Number (Last 4)</div><div class="info-value">**** ${verifiedAccount.maskedNumber || '-'}</div></div>
+          <div class="info-item"><div class="info-label">Purpose of Verification</div><div class="info-value">${purposeOfVerification || '-'}</div></div>
+        </div>
+        <div class="amount-highlight">
+          <div class="amount-label">Verified Amount</div>
+          <div class="amount-value">${formatCurrency(requestedAmount)}</div>
+          <div class="amount-date">As of ${generatedDate.toLocaleDateString()}</div>
+        </div>
+        <div class="section-header">Verification Details</div>
+        <div class="details-section">
+          <div class="detail-box">
+            <p><span class="bold">Report ID:</span> ${reportId || '-'}</p>
+            <p><span class="bold">Request ID:</span> ${requestId || '-'}</p>
+            <p><span class="bold">Generated:</span> ${generatedDate.toLocaleString()}</p>
+            <p><span class="bold">Status:</span> <span style="color: ${sufficient ? successColor : errorColor};">${sufficient ? 'VERIFIED' : 'INSUFFICIENT'}</span></p>
+          </div>
+          <div class="qr-code">
+            <img src="${qrCodeDataUrl}" alt="QR Code" style="width: 90px; height: 90px; display: block; margin: 0 auto;" />
+            <div class="qr-code-text">Scan to verify</div>
+          </div>
+        </div>
+        <div class="note-box">
+          <span class="bold">Note:</span> This verification report confirms that ${fullName || 'the account holder'} ${sufficient ? 'has verified funds of' : 'does not have sufficient balance for'} ${formatCurrency(requestedAmount)} in their ${verifiedAccount.subtype || verifiedAccount.type || 'account'} ending in ${verifiedAccount.maskedNumber || '----'} at ${verifiedAccount.bankName || 'the bank'}. This verification was requested for: ${purposeOfVerification || '-'}.
+        </div>
+      </div>
+      <div class="footer">
+        <p>This document was automatically generated by the Banking Verification System.</p>
+        <p>Report ID: ${reportId || '-'} | Generated: ${generatedDate.toLocaleString()}</p>
+      </div>
+    </body>
     </html>
   `;
 };
@@ -54,10 +236,11 @@ export default function VerificationResultScreen() {
     fullName?: string;
     bankAccountName?: string;
     purposeOfVerification?: string;
-    requestId: string;
+    requestId?: string;
   }>();
 
   const { session } = useAuth();
+  let qrCodeRef: any;
 
   const hasAllDataInParams = !!(params.sufficient && params.requestedAmount && params.generatedAt && params.accounts);
 
@@ -88,20 +271,38 @@ export default function VerificationResultScreen() {
       Alert.alert('Error', 'Report data not available for download.');
       return;
     }
-    try {
-      const htmlContent = generateReportHtml(reportData);
-      const fileUri = (FileSystem.documentDirectory || '') + `verification-report-${reportData.reportId}.html`;
-      await FileSystem.writeAsStringAsync(fileUri, htmlContent, { encoding: 'utf8' });
-
-      if (!(await Sharing.isAvailableAsync())) {
-        Alert.alert('Sharing is not available on this device');
-        return;
-      }
-      await Sharing.shareAsync(fileUri, { mimeType: 'text/html', dialogTitle: 'Download Verification Report' });
-    } catch (e) {
-      console.error('Error generating or sharing report:', e);
-      Alert.alert('Error', 'Failed to generate report. Please try again.');
+    if (!qrCodeRef) {
+      Alert.alert('Error', 'QR code reference not available.');
+      return;
     }
+
+    qrCodeRef.toDataURL(async (base64QrCode: string) => {
+      try {
+        // Convert the base64 string to a data URL if it isn't already
+        const qrCodeDataUrl = base64QrCode.startsWith('data:')
+          ? base64QrCode
+          : `data:image/png;base64,${base64QrCode}`;
+
+        const htmlContent = generateReportHtml(reportData, qrCodeDataUrl);
+        const { uri } = await Print.printToFileAsync({
+          html: htmlContent,
+          base64: false,
+        });
+
+        const pdfName = `verification-report-${reportData.reportId}.pdf`;
+        const pdfUri = FileSystem.documentDirectory + pdfName;
+        await FileSystem.moveAsync({ from: uri, to: pdfUri });
+
+        if (!(await Sharing.isAvailableAsync())) {
+          Alert.alert('Sharing is not available on this device');
+          return;
+        }
+        await Sharing.shareAsync(pdfUri, { mimeType: 'application/pdf', dialogTitle: 'Download Verification Report' });
+      } catch (e) {
+        console.error('Error generating or sharing report:', e);
+        Alert.alert('Error', 'Failed to generate report. Please try again.');
+      }
+    });
   };
 
   if (isLoading && !parsedData) {
@@ -197,22 +398,35 @@ export default function VerificationResultScreen() {
 
           {/* Report Details */}
           <ThemedText style={styles.sectionHeader}>Verification Details</ThemedText>
-          <View style={styles.detailBox}>
-            <ThemedText style={styles.detailText}>
-              <ThemedText style={styles.bold}>Report ID:</ThemedText> {reportData.reportId}
-            </ThemedText>
-            <ThemedText style={styles.detailText}>
-              <ThemedText style={styles.bold}>Generated:</ThemedText>{' '}
-              {reportData.generatedAt
-                ? new Date(reportData.generatedAt).toLocaleString()
-                : '-'}
-            </ThemedText>
-            <ThemedText style={styles.detailText}>
-              <ThemedText style={styles.bold}>Status:</ThemedText>{' '}
-              <ThemedText style={{ color: reportData.sufficient ? '#10B981' : '#EF4444' }}>
-                {reportData.sufficient ? 'VERIFIED' : 'INSUFFICIENT'}
+          <View style={styles.detailsSection}>
+            <View style={styles.detailBox}>
+              <ThemedText style={styles.detailText}>
+                <ThemedText style={styles.bold}>Report ID:</ThemedText> {reportData.reportId}
               </ThemedText>
-            </ThemedText>
+              <ThemedText style={styles.detailText}>
+                <ThemedText style={styles.bold}>Request ID:</ThemedText> {reportData.requestId}
+              </ThemedText>
+              <ThemedText style={styles.detailText}>
+                <ThemedText style={styles.bold}>Generated:</ThemedText>{' '}
+                {reportData.generatedAt
+                  ? new Date(reportData.generatedAt).toLocaleString()
+                  : '-'}
+              </ThemedText>
+              <ThemedText style={styles.detailText}>
+                <ThemedText style={styles.bold}>Status:</ThemedText>{' '}
+                <ThemedText style={{ color: reportData.sufficient ? '#10B981' : '#EF4444' }}>
+                  {reportData.sufficient ? 'VERIFIED' : 'INSUFFICIENT'}
+                </ThemedText>
+              </ThemedText>
+            </View>
+            <View style={styles.qrCodeContainer}>
+              <QRCode
+                value={reportData.requestId || 'no-request-id'}
+                size={90}
+                getRef={(c) => (qrCodeRef = c)}
+              />
+              <ThemedText style={styles.qrCodeText}>Scan to verify</ThemedText>
+            </View>
           </View>
 
           {/* Note Box */}
@@ -349,8 +563,14 @@ const styles = StyleSheet.create({
   amountDate: {
     color: '#f0fdf4',
   },
-  detailBox: {
+  detailsSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginTop: 10,
+  },
+  detailBox: {
+    // styles for the text details box
   },
   detailText: {
     fontSize: 14,
@@ -360,6 +580,14 @@ const styles = StyleSheet.create({
   bold: {
     fontWeight: 'bold',
     color: '#111111',
+  },
+  qrCodeContainer: {
+    alignItems: 'center',
+  },
+  qrCodeText: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
   },
   noteBox: {
     backgroundColor: '#f0f9ff',
