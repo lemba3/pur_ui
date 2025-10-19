@@ -1,31 +1,59 @@
 import { useAuth } from '@/hooks/useAuth';
 import React, { useState } from 'react';
-import { View, TextInput, Text, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import { View, TextInput, Text, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import Button from '@/components/ui/button';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { myColors } from '@/constants/my-constants';
+import { z } from 'zod';
+
+// 1. Define Zod Schema
+const SignUpSchema = z.object({
+  name: z.string().min(1, { message: "Name is required" }),
+  email: z.string().email({ message: "Please enter a valid email" }),
+  password: z.string()
+    .min(6, { message: "Password must be at least 6 characters." })
+    .regex(/[a-zA-Z]/, { message: "Password must contain at least one letter." })
+    .regex(/[^a-zA-Z0-9]/, { message: "Password must contain at least one special character." }),
+  confirmPassword: z.string(),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
+});
+
+type FormData = z.infer<typeof SignUpSchema>;
 
 export default function SignUp() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [name, setName] = useState('');
+  // 2. Refactor state
+  const [formData, setFormData] = useState<FormData>({ name: '', email: '', password: '', confirmPassword: '' });
+  const [errors, setErrors] = useState<z.ZodError['formErrors']['fieldErrors'] | null>(null);
+
   const { signUp, isAuthenticating } = useAuth();
   const router = useRouter();
 
+  const handleInputChange = (field: keyof FormData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error for the field being edited
+    if (errors && errors[field]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  // 3. Create validation handler
   const handleSignUp = () => {
-    if (password !== confirmPassword) {
-      Alert.alert("Passwords don't match", "Please make sure your passwords match.");
-      return;
+    const result = SignUpSchema.safeParse(formData);
+    if (!result.success) {
+      setErrors(result.error.formErrors.fieldErrors);
+    } else {
+      setErrors(null);
+      signUp(result.data.email, result.data.password, result.data.name);
     }
-    if (!email || !password || !name) {
-      Alert.alert("Missing fields", "Please fill all the fields.");
-      return;
-    }
-    signUp(email, password, name);
   };
 
   return (
@@ -33,7 +61,7 @@ export default function SignUp() {
       colors={[myColors.gradient1, myColors.gradient2]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      style={styles.container} // reuse your container style for flex/padding
+      style={styles.container}
     >
       <KeyboardAvoidingView
         style={{ width: '100%' }}
@@ -46,53 +74,66 @@ export default function SignUp() {
         </View>
 
         <View style={styles.card}>
-          <View style={styles.inputContainer}>
-            <MaterialCommunityIcons name="account-outline" size={24} color={Colors.dark.icon} style={styles.icon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Name"
-              placeholderTextColor={Colors.dark.icon}
-              value={name}
-              onChangeText={setName}
-              autoCapitalize="words"
-            />
+          {/* 4. Update Inputs and add Error display */}
+          <View style={styles.inputWrapper}>
+            <View style={styles.inputContainer}>
+              <MaterialCommunityIcons name="account-outline" size={24} color={Colors.dark.icon} style={styles.icon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Name"
+                placeholderTextColor={Colors.dark.icon}
+                value={formData.name}
+                onChangeText={(text) => handleInputChange('name', text)}
+                autoCapitalize="words"
+              />
+            </View>
+            {errors?.name && <Text style={styles.errorText}>{errors.name[0]}</Text>}
           </View>
 
-          <View style={styles.inputContainer}>
-            <MaterialCommunityIcons name="email-outline" size={24} color={Colors.dark.icon} style={styles.icon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              placeholderTextColor={Colors.dark.icon}
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
+          <View style={styles.inputWrapper}>
+            <View style={styles.inputContainer}>
+              <MaterialCommunityIcons name="email-outline" size={24} color={Colors.dark.icon} style={styles.icon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Email"
+                placeholderTextColor={Colors.dark.icon}
+                value={formData.email}
+                onChangeText={(text) => handleInputChange('email', text)}
+                autoCapitalize="none"
+                keyboardType="email-address"
+              />
+            </View>
+            {errors?.email && <Text style={styles.errorText}>{errors.email[0]}</Text>}
           </View>
 
-          <View style={styles.inputContainer}>
-            <MaterialCommunityIcons name="lock-outline" size={24} color={Colors.dark.icon} style={styles.icon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              placeholderTextColor={Colors.dark.icon}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
+          <View style={styles.inputWrapper}>
+            <View style={styles.inputContainer}>
+              <MaterialCommunityIcons name="lock-outline" size={24} color={Colors.dark.icon} style={styles.icon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor={Colors.dark.icon}
+                value={formData.password}
+                onChangeText={(text) => handleInputChange('password', text)}
+                secureTextEntry
+              />
+            </View>
+            {errors?.password && <Text style={styles.errorText}>{errors.password[0]}</Text>}
           </View>
 
-          <View style={styles.inputContainer}>
-            <MaterialCommunityIcons name="lock-check-outline" size={24} color={Colors.dark.icon} style={styles.icon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Confirm Password"
-              placeholderTextColor={Colors.dark.icon}
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry
-            />
+          <View style={styles.inputWrapper}>
+            <View style={styles.inputContainer}>
+              <MaterialCommunityIcons name="lock-check-outline" size={24} color={Colors.dark.icon} style={styles.icon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Confirm Password"
+                placeholderTextColor={Colors.dark.icon}
+                value={formData.confirmPassword}
+                onChangeText={(text) => handleInputChange('confirmPassword', text)}
+                secureTextEntry
+              />
+            </View>
+            {errors?.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword[0]}</Text>}
           </View>
 
           <Button
@@ -100,7 +141,7 @@ export default function SignUp() {
             onPress={handleSignUp}
             isLoading={isAuthenticating}
             textStyle={{ fontSize: 18, fontWeight: 'bold', color: '#FFFFFF' }}
-            style={{ backgroundColor: Colors.dark.tint }}
+            style={{ backgroundColor: Colors.dark.tint, marginTop: 10 }}
           />
 
           <TouchableOpacity
@@ -151,13 +192,15 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
     backgroundColor: Colors.dark.cardBackground,
   },
+  inputWrapper: {
+    marginBottom: 18,
+  },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     height: 55,
     borderWidth: 1,
     borderRadius: 15,
-    marginBottom: 18,
     paddingHorizontal: 18,
     borderColor: Colors.dark.icon,
     backgroundColor: Colors.dark.inputBackground,
@@ -178,5 +221,11 @@ const styles = StyleSheet.create({
   backText: {
     fontSize: 15,
     fontWeight: '500',
+  },
+  errorText: {
+    color: Colors.dark.error,
+    marginTop: 5,
+    marginLeft: 15,
+    fontSize: 14,
   },
 });

@@ -7,18 +7,52 @@ import Button from '@/components/ui/button';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { myColors } from '@/constants/my-constants';
+import { z } from 'zod';
+
+// 1. Define Zod Schema
+const LoginSchema = z.object({
+  email: z.string().email({ message: "Please enter a valid email" }),
+  password: z.string().min(1, { message: "Password is required" }),
+});
+
+type FormData = z.infer<typeof LoginSchema>;
 
 export default function Login() {
-  const [email, setEmail] = useState('test@gmail.com');
-  const [password, setPassword] = useState('test');
+  // 2. Refactor state
+  const [formData, setFormData] = useState<FormData>({ email: '', password: '' });
+  const [errors, setErrors] = useState<z.ZodError['formErrors']['fieldErrors'] | null>(null);
+
   const { signIn, signInWithGoogle, isAuthenticating, authMethod } = useAuth();
+
+  const handleInputChange = (field: keyof FormData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error for the field being edited
+    if (errors && errors[field]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  // 3. Create validation handler
+  const handleSignIn = () => {
+    const result = LoginSchema.safeParse(formData);
+    if (!result.success) {
+      setErrors(result.error.formErrors.fieldErrors);
+    } else {
+      setErrors(null);
+      signIn(result.data.email, result.data.password);
+    }
+  };
 
   return (
     <LinearGradient
       colors={[myColors.gradient1, myColors.gradient2]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      style={styles.container} // reuse your container style for flex/padding
+      style={styles.container}
     >
       <KeyboardAvoidingView
         style={{ width: '100%' }}
@@ -31,34 +65,42 @@ export default function Login() {
         </View>
 
         <View style={styles.card}>
-          <View style={styles.inputContainer}>
-            <MaterialCommunityIcons name="email-outline" size={24} color={Colors.dark.icon} style={styles.icon} />
-            <TextInput
-              style={styles.input} placeholder="Email"
-              placeholderTextColor={Colors.dark.icon}
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
+          {/* 4. Update Inputs and add Error display */}
+          <View style={styles.inputWrapper}>
+            <View style={styles.inputContainer}>
+              <MaterialCommunityIcons name="email-outline" size={24} color={Colors.dark.icon} style={styles.icon} />
+              <TextInput
+                style={styles.input} placeholder="Email"
+                placeholderTextColor={Colors.dark.icon}
+                value={formData.email}
+                onChangeText={(text) => handleInputChange('email', text)}
+                autoCapitalize="none"
+                keyboardType="email-address"
+              />
+            </View>
+            {errors?.email && <Text style={styles.errorText}>{errors.email[0]}</Text>}
           </View>
-          <View style={styles.inputContainer}>
-            <MaterialCommunityIcons name="lock-outline" size={24} color={Colors.dark.icon} style={styles.icon} />
-            <TextInput
-              style={styles.input} placeholder="Password"
-              placeholderTextColor={Colors.dark.icon}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
+
+          <View style={styles.inputWrapper}>
+            <View style={styles.inputContainer}>
+              <MaterialCommunityIcons name="lock-outline" size={24} color={Colors.dark.icon} style={styles.icon} />
+              <TextInput
+                style={styles.input} placeholder="Password"
+                placeholderTextColor={Colors.dark.icon}
+                value={formData.password}
+                onChangeText={(text) => handleInputChange('password', text)}
+                secureTextEntry
+              />
+            </View>
+            {errors?.password && <Text style={styles.errorText}>{errors.password[0]}</Text>}
           </View>
 
           <Button
             title="Sign In"
-            onPress={() => signIn(email, password)}
+            onPress={handleSignIn} // Use new handler
             isLoading={isAuthenticating && authMethod === 'email'}
             textStyle={{ fontSize: 18, fontWeight: 'bold', color: '#FFFFFF' }}
-            style={{ backgroundColor: Colors.dark.tint }}
+            style={{ backgroundColor: Colors.dark.tint, marginTop: 10 }}
           />
 
           <Link href="/forgot-password" style={styles.link}>
@@ -130,13 +172,15 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
     backgroundColor: Colors.dark.cardBackground,
   },
+  inputWrapper: {
+    marginBottom: 18,
+  },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     height: 55,
     borderWidth: 1,
     borderRadius: 15,
-    marginBottom: 18,
     paddingHorizontal: 18,
     borderColor: Colors.dark.icon,
     backgroundColor: Colors.dark.inputBackground,
@@ -171,5 +215,11 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
     color: Colors.dark.icon,
     fontWeight: '600',
+  },
+  errorText: {
+    color: Colors.dark.error,
+    marginTop: 5,
+    marginLeft: 15,
+    fontSize: 14,
   },
 });

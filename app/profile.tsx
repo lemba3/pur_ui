@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Alert } from 'react-native';
 import { useAuth } from '@/hooks/useAuth';
+import api from '@/lib/api';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { myColors } from '@/constants/my-constants';
@@ -9,7 +10,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
 
 export default function ProfileScreen() {
-  const { session } = useAuth();
+  const { session, signOut } = useAuth();
   const user = session?.user;
 
   const getInitials = (name: string | undefined) => {
@@ -18,18 +19,42 @@ export default function ProfileScreen() {
   };
 
   const handleDeleteAccount = () => {
+    const onConfirmDelete = async () => {
+      try {
+        const token = session?.token.accessToken;
+        if (!token) {
+          Alert.alert("Error", "You are not authenticated.");
+          return;
+        }
+
+        await api.delete('/users/me', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        Alert.alert(
+          "Account Deleted",
+          "Your account has been successfully deleted.",
+          [{ text: "OK", onPress: signOut }]
+        );
+      } catch (error: any) {
+        console.error("Failed to delete account:", error);
+        const errorMessage = error.response?.data?.error || "An unexpected error occurred. Please try again.";
+        Alert.alert("Deletion Failed", errorMessage);
+      }
+    };
+
     Alert.alert(
       "Delete Account",
       "Are you sure you want to delete your account? This action is irreversible.",
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Delete", style: "destructive", onPress: () => console.log("Account deletion initiated (dummy)") }
+        { text: "Delete", style: "destructive", onPress: onConfirmDelete }
       ]
     );
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.dark.background }} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: Colors.dark.background }}>
       <Stack.Screen options={{ title: 'Profile', headerBackTitle: 'Settings' }} />
       <LinearGradient
         colors={[myColors.gradient1, myColors.gradient2]}
