@@ -16,16 +16,7 @@ const fetchReports = async ({ pageParam = 1, queryKey }: { pageParam?: number, q
     },
   });
 
-  // Map reports to include bankNames
-  const reportsWithBankNames = response.data.reports.map((report: any) => ({
-    ...report,
-    bankNames: [...new Set(report.plaidItem.accounts.map((acc: any) => acc.bankName))],
-  }));
-
-  return {
-    ...response.data,
-    reports: reportsWithBankNames,
-  };
+  return response.data;
 };
 
 export const useReports = () => {
