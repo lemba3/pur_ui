@@ -198,9 +198,18 @@ export default function HomeScreen() {
 
             <ThemedText style={styles.inputLabel}>Bank Account Name</ThemedText>
             <View style={[styles.inputContainer, focusedInput === 'bankAccountName' && styles.inputContainerFocused]}>
+              {bankAccountName.length === 0 && (
+                <ThemedText
+                  style={styles.placeholderText}
+                  numberOfLines={focusedInput === 'bankAccountName' ? undefined : 1}
+                  ellipsizeMode="tail"
+                  pointerEvents="none"
+                >
+                  Enter account name as it appears in your bank records
+                </ThemedText>
+              )}
               <TextInput
                 style={styles.input}
-                placeholder="Enter account name as it appears in your bank records"
                 value={bankAccountName}
                 onChangeText={setBankAccountName}
                 onFocus={() => setFocusedInput('bankAccountName')}
@@ -211,9 +220,18 @@ export default function HomeScreen() {
 
             <ThemedText style={styles.inputLabel}>Purpose of Verification</ThemedText>
             <View style={[styles.inputContainer, focusedInput === 'purpose' && styles.inputContainerFocused]}>
+              {purpose.length === 0 && (
+                <ThemedText
+                  style={styles.placeholderText}
+                  numberOfLines={focusedInput === 'purpose' ? undefined : 1}
+                  ellipsizeMode="tail"
+                  pointerEvents="none"
+                >
+                  e.g. Loan application, Employment verification, etc.
+                </ThemedText>
+              )}
               <TextInput
                 style={styles.input}
-                placeholder="e.g. Loan application, Employment verification, etc."
                 value={purpose}
                 onChangeText={setPurpose}
                 onFocus={() => setFocusedInput('purpose')}
@@ -318,6 +336,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.dark.inputBackground, // Default border
     flexDirection: 'row',
     alignItems: 'center',
+    height: 50,
   },
   inputContainerFocused: {
     borderColor: Colors.dark.tint, // Highlight color on focus
@@ -325,9 +344,19 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     color: Colors.dark.cardText,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
     fontSize: 16,
+    height: '100%',
+    paddingVertical: 0,
+    paddingHorizontal: 16, // Added this line
+    textAlignVertical: 'center',
+    maxWidth: '100%',
+  },
+  placeholderText: {
+    position: 'absolute',
+    fontSize: 16,
+    color: Colors.dark.icon,
+    left: 16,
+    right: 16,
   },
   amountInputContainer: {
     paddingLeft: 15,
@@ -377,7 +406,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 12,
     marginRight: 10,
-    width: 160, // Wider to fit content
+    width: 220, // Wider to fit content
     height: 100,
     borderWidth: 2,
     borderColor: 'transparent',
