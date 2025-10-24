@@ -68,7 +68,7 @@ export default function SignUp() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.header}>
-          <Image source={require('@/assets/images/pur.png')} style={styles.logo} />
+          <Image source={require('@/assets/images/fv-logo.png')} style={styles.logo} />
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>Sign up to get started</Text>
         </View>

@@ -8,6 +8,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { myColors } from '@/constants/my-constants';
 import { z } from 'zod';
+import { appleAuth } from '@invertase/react-native-apple-authentication';
 
 // 1. Define Zod Schema
 const LoginSchema = z.object({
@@ -22,7 +23,7 @@ export default function Login() {
   const [formData, setFormData] = useState<FormData>({ email: '', password: '' });
   const [errors, setErrors] = useState<z.ZodError['formErrors']['fieldErrors'] | null>(null);
 
-  const { signIn, signInWithGoogle, isAuthenticating, authMethod } = useAuth();
+  const { signIn, signInWithGoogle, signInWithApple, isAuthenticating, authMethod } = useAuth();
 
   const handleInputChange = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -59,7 +60,7 @@ export default function Login() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.header}>
-          <Image source={require('@/assets/images/pur.png')} style={styles.logo} />
+          <Image source={require('@/assets/images/fv-logo.png')} style={styles.logo} />
           <Text style={styles.title}>Welcome Back</Text>
           <Text style={styles.subtitle}>Sign in to continue</Text>
         </View>
@@ -123,6 +124,17 @@ export default function Login() {
             icon={<MaterialCommunityIcons name="google" size={20} color={Colors.dark.tint} style={{ marginRight: 10 }} />}
             textStyle={{ fontSize: 18, fontWeight: 'bold', color: Colors.dark.tint }}
           />
+
+          {Platform.OS === 'ios' && appleAuth.isSupported && (
+            <Button
+              title="Sign In with Apple"
+              onPress={signInWithApple}
+              isLoading={isAuthenticating && authMethod === 'apple'}
+              style={{ backgroundColor: '#000000', marginTop: 10 }}
+              icon={<MaterialCommunityIcons name="apple" size={20} color={'#FFFFFF'} style={{ marginRight: 10 }} />}
+              textStyle={{ fontSize: 18, fontWeight: 'bold', color: '#FFFFFF' }}
+            />
+          )}
 
           <Link href="/signup" style={styles.link}>
             <Text style={[styles.linkText, { color: Colors.dark.tint }]}>

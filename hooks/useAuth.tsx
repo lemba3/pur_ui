@@ -9,9 +9,11 @@ import {
   GoogleSignin,
   statusCodes,
 } from '@react-native-google-signin/google-signin';
+import { appleAuth } from '@invertase/react-native-apple-authentication';
 
 // Configure Google Sign In
 GoogleSignin.configure({
+  iosClientId: process.env.EXPO_PUBLIC_IOS_CLIENT_ID,
   webClientId: process.env.EXPO_PUBLIC_WEB_CLIENT_ID,
   forceCodeForRefreshToken: true, // Forces account picker every time
   offlineAccess: true // Required for forceCodeForRefreshToken to work
@@ -32,6 +34,7 @@ interface Session {
 const AuthContext = createContext<{
   signIn: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  signInWithApple: () => Promise<void>;
   signOut: () => void;
   signUp: (email: string, password: string, name: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
@@ -39,10 +42,11 @@ const AuthContext = createContext<{
   session?: Session | null;
   isLoading: boolean;
   isAuthenticating: boolean;
-  authMethod: 'email' | 'google' | null;
+  authMethod: 'email' | 'google' | 'apple' | null;
 }>({
   signIn: () => Promise.resolve(),
   signInWithGoogle: () => Promise.resolve(),
+  signInWithApple: () => Promise.resolve(),
   signOut: () => { },
   signUp: () => Promise.resolve(),
   forgotPassword: () => Promise.resolve(),
@@ -57,7 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const [authMethod, setAuthMethod] = useState<'email' | 'google' | null>(null);
+  const [authMethod, setAuthMethod] = useState<'email' | 'google' | 'apple' | null>(null);
   const router = useRouter();
 
   // Debug log the configuration once
@@ -86,6 +90,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         alert(`Google Sign in failed: ${e.response.data.error || 'An error occurred'}`);
       } else {
         alert("Google Sign in failed. Check console for details.");
+      }
+    } finally {
+      setIsAuthenticating(false);
+      setAuthMethod(null);
+    }
+  };
+
+  const handleAppleSignIn = async (idToken: string) => {
+    setIsAuthenticating(true);
+    setAuthMethod('apple');
+    try {
+      const res = await axios.post(EXPO_PUBLIC_BASE_API_URL + '/auth/apple', { idToken });
+      const sessionValue: Session = res.data;
+      await SecureStore.setItemAsync('session', JSON.stringify(sessionValue));
+      setSession(sessionValue);
+      if (sessionValue?.token?.accessToken) {
+        api.defaults.headers.common['Authorization'] = `Bearer ${sessionValue.token.accessToken}`;
+      }
+    } catch (e) {
+      console.error("Apple Sign in failed", e);
+      if (isAxiosError(e) && e.response) {
+        alert(`Apple Sign in failed: ${e.response.data.error || 'An error occurred'}`);
+      } else {
+        alert("Apple Sign in failed. Check console for details.");
       }
     } finally {
       setIsAuthenticating(false);
@@ -151,8 +179,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await GoogleSignin.hasPlayServices();
       await GoogleSignin.signIn();
+      const currentUser = GoogleSignin.getCurrentUser();
+      if (!currentUser) {
+        // throw new Error('User not signed in yet');
+        setIsAuthenticating(false);
+        setAuthMethod(null);
+        return;
+      }
       const tokens = await GoogleSignin.getTokens();
-      // console.log('Tokens:', tokens);
 
       if (tokens.idToken) {
         await handleGoogleSignIn(tokens.idToken);
@@ -170,6 +204,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         // handle this later why this error ERROR  Google Sign In Error: {"code": "getTokens", "fullError": [Error: getTokens requires a user to be signed in], "message": "getTokens requires a user to be signed in"}
         // alert('Something went wrong: ' + error.message);
+      }
+      setIsAuthenticating(false);
+      setAuthMethod(null);
+    }
+  };
+
+  const signInWithApple = async () => {
+    setIsAuthenticating(true);
+    setAuthMethod('apple');
+    try {
+      const appleAuthRequestResponse = await appleAuth.performRequest({
+        requestedOperation: appleAuth.Operation.LOGIN,
+        requestedScopes: [appleAuth.Scope.EMAIL, appleAuth.Scope.FULL_NAME],
+      });
+
+      const { identityToken } = appleAuthRequestResponse;
+
+      if (identityToken) {
+        await handleAppleSignIn(identityToken);
+      } else {
+        throw new Error('No Apple ID token received');
+      }
+    } catch (error: any) {
+      console.error('Apple Sign In Error:', error);
+      if (error.code === appleAuth.Error.CANCELED) {
+        console.log('User cancelled the Apple Sign In flow');
+      } else {
+        alert('Apple Sign In failed: ' + error.message);
       }
       setIsAuthenticating(false);
       setAuthMethod(null);
@@ -263,6 +325,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         signIn,
         signInWithGoogle,
+        signInWithApple,
         signOut,
         signUp,
         forgotPassword,
