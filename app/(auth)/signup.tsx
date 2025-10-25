@@ -68,7 +68,7 @@ export default function SignUp() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.header}>
-          <Image source={require('@/assets/images/fv-logo.png')} style={styles.logo} />
+          <Image source={require('@/assets/images/fv-crop.png')} style={styles.logo} />
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>Sign up to get started</Text>
         </View>
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
   logo: {
     width: 120,
     height: 120,
-    marginBottom: 20,
+    // marginBottom: 20,
     resizeMode: 'contain',
   },
   title: {

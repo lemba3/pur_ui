@@ -24,7 +24,7 @@ export default function ForgotPassword() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.header}>
-          <Image source={require('@/assets/images/pur.png')} style={styles.logo} />
+          <Image source={require('@/assets/images/fv-crop.png')} style={styles.logo} />
           <Text style={styles.title}>Forgot Password</Text>
           <Text style={styles.subtitle}>Enter your email to receive a reset link</Text>
         </View>
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
   logo: {
     width: 120,
     height: 120,
-    marginBottom: 20,
+    // marginBottom: 20,
     resizeMode: 'contain',
   },
   title: {

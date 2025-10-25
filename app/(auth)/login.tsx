@@ -60,7 +60,7 @@ export default function Login() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.header}>
-          <Image source={require('@/assets/images/fv-logo.png')} style={styles.logo} />
+          <Image source={require('@/assets/images/fv-crop.png')} style={styles.logo} />
           <Text style={styles.title}>Welcome Back</Text>
           <Text style={styles.subtitle}>Sign in to continue</Text>
         </View>
@@ -162,8 +162,8 @@ const styles = StyleSheet.create({
   logo: {
     width: 120,
     height: 120,
-    marginBottom: 20,
-    resizeMode: 'contain',
+    // marginBottom: 20,
+    resizeMode: 'contain'
   },
   title: {
     fontSize: 36,
