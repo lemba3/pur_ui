@@ -65,13 +65,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   // Debug log the configuration once
-  useEffect(() => {
-    console.log('Google Auth Configuration:', {
-      webClientId: process.env.EXPO_PUBLIC_WEB_CLIENT_ID?.slice(0, 10) + '...',
-      androidClientId: process.env.EXPO_PUBLIC_ANDROID_CLIENT_ID?.slice(0, 10) + '...',
-      platform: Platform.OS
-    });
-  }, []);
+  // useEffect(() => {
+  //   console.log('Google Auth Configuration:', {
+  //     webClientId: process.env.EXPO_PUBLIC_WEB_CLIENT_ID?.slice(0, 10) + '...',
+  //     androidClientId: process.env.EXPO_PUBLIC_ANDROID_CLIENT_ID?.slice(0, 10) + '...',
+  //     platform: Platform.OS
+  //   });
+  // }, []);
 
   const handleGoogleSignIn = async (idToken: string) => {
     setIsAuthenticating(true);

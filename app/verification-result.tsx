@@ -1,16 +1,15 @@
-import React from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams, Stack } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
-import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '@/hooks/useAuth';
-import * as FileSystem from 'expo-file-system/legacy';
-import * as Sharing from 'expo-sharing';
 import { useGetReport } from '@/hooks/report';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors } from '@/constants/theme';
+import { useAuth } from '@/hooks/useAuth';
+import { Ionicons } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Print from 'expo-print';
+import { Stack, useLocalSearchParams } from 'expo-router';
+import * as Sharing from 'expo-sharing';
+import React from 'react';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const generateReportHtml = (data: any, qrCodeDataUrl: string) => {
   const {
@@ -44,11 +43,13 @@ const generateReportHtml = (data: any, qrCodeDataUrl: string) => {
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
           background-color: ${pageBackgroundColor};
           margin: 0;
-          padding: 20px;
+          padding: 40px 20px 0px 20px;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
         }
         .header {
           background-color: ${headerBackgroundColor};
-          padding: 30px 16px;
+          padding: 20px 16px;
           border-radius: 10px;
           text-align: center;
           color: white;
@@ -114,7 +115,7 @@ const generateReportHtml = (data: any, qrCodeDataUrl: string) => {
           border-radius: 10px;
           padding: 20px;
           text-align: center;
-          margin: 20px 0;
+          margin: 15px 0;
           background-color: ${sufficient ? successColor : errorColor};
           color: white;
         }
@@ -169,8 +170,8 @@ const generateReportHtml = (data: any, qrCodeDataUrl: string) => {
           color: ${textColor};
         }
         .footer {
-          margin-top: 20px;
-          padding: 20px 16px;
+          margin-top: 10px;
+          padding: 10px 16px;
           border-top: 1px solid #eee;
           text-align: center;
           color: #666;
@@ -400,24 +401,24 @@ export default function VerificationResultScreen() {
           <ThemedText style={styles.sectionHeader}>Verification Details</ThemedText>
           <View style={styles.detailsSection}>
             <View style={styles.detailBox}>
-              <ThemedText style={styles.detailText}>
-                <ThemedText style={styles.bold}>Report ID:</ThemedText> {reportData.reportId}
-              </ThemedText>
-              <ThemedText style={styles.detailText}>
-                <ThemedText style={styles.bold}>Request ID:</ThemedText> {reportData.requestId}
-              </ThemedText>
-              <ThemedText style={styles.detailText}>
-                <ThemedText style={styles.bold}>Generated:</ThemedText>{' '}
-                {reportData.generatedAt
-                  ? new Date(reportData.generatedAt).toLocaleString()
-                  : '-'}
-              </ThemedText>
-              <ThemedText style={styles.detailText}>
-                <ThemedText style={styles.bold}>Status:</ThemedText>{' '}
-                <ThemedText style={{ color: reportData.sufficient ? '#10B981' : '#EF4444' }}>
+              <View style={styles.detailItem}>
+                <ThemedText style={[styles.detailText, styles.bold]}>Report ID: </ThemedText>
+                <ThemedText style={styles.detailText}>{reportData.reportId}</ThemedText>
+              </View>
+              <View style={styles.detailItem}>
+                <ThemedText style={[styles.detailText, styles.bold]}>Request ID: </ThemedText>
+                <ThemedText style={styles.detailText}>{reportData.requestId}</ThemedText>
+              </View>
+              <View style={styles.detailItem}>
+                <ThemedText style={[styles.detailText, styles.bold]}>Generated: </ThemedText>
+                <ThemedText style={styles.detailText}>{reportData.generatedAt ? new Date(reportData.generatedAt).toLocaleString() : '-'}</ThemedText>
+              </View>
+              <View style={styles.detailItem}>
+                <ThemedText style={[styles.detailText, styles.bold]}>Status: </ThemedText>
+                <ThemedText style={[styles.detailText, { color: reportData.sufficient ? '#10B981' : '#EF4444' }]}>
                   {reportData.sufficient ? 'VERIFIED' : 'INSUFFICIENT'}
                 </ThemedText>
-              </ThemedText>
+              </View>
             </View>
             {/* <View style={styles.qrCodeContainer}>
               <QRCode
@@ -562,12 +563,15 @@ const styles = StyleSheet.create({
   amountLabel: {
     fontSize: 15,
     fontWeight: '600',
+    color: '#f0fdf4',
+    lineHeight: 22,
   },
   amountValue: {
     fontSize: 32,
     fontWeight: 'bold',
     color: '#fff',
     marginVertical: 6,
+    lineHeight: 40,
   },
   amountDate: {
     color: '#f0fdf4',
@@ -581,10 +585,14 @@ const styles = StyleSheet.create({
   detailBox: {
     // styles for the text details box
   },
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 2,
+  },
   detailText: {
     fontSize: 14,
     color: '#333',
-    marginVertical: 2,
   },
   bold: {
     fontWeight: 'bold',

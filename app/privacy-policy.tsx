@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, View, Text, ScrollView, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { myColors } from '@/constants/my-constants';
@@ -19,7 +19,7 @@ export default function PrivacyPolicyScreen() {
       return <Text style={styles.body}>Failed to load content.</Text>;
     }
 
-    return privacyPolicyContent.map((item, index) => {
+    return privacyPolicyContent?.map((item, index) => {
       switch (item.type) {
         case 'title':
           return <Text key={index} style={styles.title}>{item.text}</Text>;
