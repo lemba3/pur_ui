@@ -98,8 +98,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const handleAppleSignIn = async (idToken: string) => {
-    setIsAuthenticating(true);
-    setAuthMethod('apple');
     try {
       const res = await axios.post(EXPO_PUBLIC_BASE_API_URL + '/auth/apple', { idToken });
       const sessionValue: Session = res.data;
@@ -115,9 +113,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         alert("Apple Sign in failed. Check console for details.");
       }
-    } finally {
-      setIsAuthenticating(false);
-      setAuthMethod(null);
     }
   };
 
@@ -227,12 +222,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('No Apple ID token received');
       }
     } catch (error: any) {
-      console.error('Apple Sign In Error:', error);
       if (error.code === appleAuth.Error.CANCELED) {
         console.log('User cancelled the Apple Sign In flow');
       } else {
+        console.error('Apple Sign In Error:', error);
         alert('Apple Sign In failed: ' + error.message);
       }
+    } finally {
       setIsAuthenticating(false);
       setAuthMethod(null);
     }
