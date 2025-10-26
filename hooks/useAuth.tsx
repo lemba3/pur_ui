@@ -283,6 +283,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email,
       });
       alert('A password reset link has been sent to your email.');
+      router.back();
     } catch (e) {
       console.error("Forgot password failed", e);
       if (isAxiosError(e) && e.response) {
@@ -303,7 +304,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         password,
       });
       alert('Your password has been reset successfully.');
-      router.push('/login');
+      router.back();
     } catch (e) {
       console.error("Reset password failed", e);
       if (isAxiosError(e) && e.response) {

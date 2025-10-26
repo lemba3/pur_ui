@@ -11,7 +11,7 @@
     "ios": {
       "bundleIdentifier": "com.purui.app",
       "supportsTablet": true,
-      "icon": "./assets/images/adaptive-icon.png"
+      "icon": "./assets/images/icon.png"
     },
     "android": {
       "package": "com.purui.app",

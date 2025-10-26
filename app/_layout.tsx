@@ -1,17 +1,33 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { SplashScreen, Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import 'react-native-reanimated';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import * as Linking from 'expo-linking';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import { Colors } from '@/constants/theme';
 
+const prefix = Linking.createURL('/');
+
 export const unstable_settings = {
   // Ensure that reloading on `/modal` keeps a back button present.
   initialRouteName: '(tabs)',
+  linking: {
+    enabled: true,
+    prefixes: ['purui://', 'https://*', 'http://*'],
+    config: {
+      screens: {
+        '(auth)': {
+          screens: {
+            'reset-password': 'reset-password',
+          },
+        },
+      },
+    },
+  },
 };
 
 const queryClient = new QueryClient();
@@ -44,21 +60,103 @@ function RootLayoutNav() {
   const router = useRouter();
   const segments = useSegments();
   const colorScheme = 'dark';
+  const [hasHandledInitialDeepLink, setHasHandledInitialDeepLink] = useState(false);
+  const [lastHandledToken, setLastHandledToken] = useState<string | null>(null);
+  const navigationTimeoutRef = useRef<number | null>(null);
+
+  // Debounced navigation function
+  const navigateToResetPassword = useCallback((token: string) => {
+    if (token === lastHandledToken) {
+      console.log('Ignoring duplicate token navigation');
+      return;
+    }
+
+    // Clear any pending navigation
+    if (navigationTimeoutRef.current) {
+      clearTimeout(navigationTimeoutRef.current);
+    }
+
+    // Set a small delay to prevent multiple rapid navigations
+    navigationTimeoutRef.current = setTimeout(() => {
+      console.log('Navigating to reset password with token');
+      setLastHandledToken(token);
+      setHasHandledInitialDeepLink(true);
+      router.replace({
+        pathname: '/(auth)/reset-password',
+        params: { token }
+      });
+    }, 100);
+  }, [router, lastHandledToken]);
+
+  // Handle deep links when app is in background
+  useEffect(() => {
+    const handleDeepLink = (event: { url: string }) => {
+      if (!hasHandledInitialDeepLink && event.url.includes('reset-password')) {
+        const token = new URL(event.url).searchParams.get('token');
+        if (token) {
+          console.log('Received deep link with token');
+          navigateToResetPassword(token);
+        }
+      }
+    };
+
+    const subscription = Linking.addEventListener('url', handleDeepLink);
+    return () => {
+      if (navigationTimeoutRef.current) {
+        clearTimeout(navigationTimeoutRef.current);
+      }
+      subscription.remove();
+    };
+  }, [navigateToResetPassword, hasHandledInitialDeepLink]);
   // const colorScheme = useColorScheme();
   // const colorScheme = 'dark';
 
   useEffect(() => {
     if (isLoading) return;
 
-    const inAuthGroup = segments[0] === '(auth)';
+    const checkInitialLink = async () => {
+      try {
+        // Only check initial link if we haven't handled it yet
+        if (!hasHandledInitialDeepLink) {
+          const url = await Linking.getInitialURL();
+          if (url?.includes('reset-password')) {
+            const token = new URL(url).searchParams.get('token');
+            if (token) {
+              console.log('Found initial deep link token');
+              navigateToResetPassword(token);
+              return true;
+            }
+          }
+        }
+        return false;
+      } catch (e) {
+        console.log('Error checking initial link:', e);
+        return false;
+      }
+    };
 
-    if (!session && !inAuthGroup) {
-      router.replace('/login');
-    } else if (session && inAuthGroup) {
-      router.replace('/');
-    }
-    SplashScreen.hideAsync();
-  }, [isLoading, session, segments, router]);
+    const handleNavigation = async () => {
+      const inAuthGroup = segments[0] === '(auth)';
+      const inResetPassword = segments[1] === 'reset-password';
+      const hasResetToken = await checkInitialLink();
+
+      // If we found and handled a reset token, don't do any other navigation
+      if (hasResetToken) {
+        SplashScreen.hideAsync();
+        return;
+      }
+
+      // Normal navigation logic
+      if (!session && !inAuthGroup && !inResetPassword) {
+        router.replace('/login');
+      } else if (session && inAuthGroup && !inResetPassword) {
+        router.replace('/');
+      }
+      SplashScreen.hideAsync();
+    };
+
+    handleNavigation();
+  }, [isLoading, session, segments, router, hasHandledInitialDeepLink, navigateToResetPassword]);
 
   if (isLoading) {
     return null;
