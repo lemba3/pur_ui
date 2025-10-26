@@ -6,7 +6,6 @@ import 'react-native-reanimated';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as Linking from 'expo-linking';
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import { Colors } from '@/constants/theme';
 
@@ -17,7 +16,11 @@ export const unstable_settings = {
   initialRouteName: '(tabs)',
   linking: {
     enabled: true,
-    prefixes: ['purui://', 'https://*', 'http://*'],
+    prefixes: [
+      `${process.env.EXPO_PUBLIC_SCHEME}://`,
+      'https://forward-lungeous-manie.ngrok-free.dev',
+      'http://forward-lungeous-manie.ngrok-free.dev'
+    ],
     config: {
       screens: {
         '(auth)': {
@@ -25,6 +28,13 @@ export const unstable_settings = {
             'reset-password': 'reset-password',
           },
         },
+        'plaid-redirect': {
+          path: 'plaid-redirect/:status?',
+          parse: {
+            status: (status: string) => status,
+          },
+        },
+        'plaid-hosted-link': 'plaid-hosted-link',
       },
     },
   },

@@ -1,6 +1,6 @@
 import { useAuth } from '@/hooks/useAuth';
 import React, { useState } from 'react';
-import { View, TextInput, Text, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import { View, TextInput, Text, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Image, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import Button from '@/components/ui/button';
@@ -65,92 +65,97 @@ export default function SignUp() {
     >
       <KeyboardAvoidingView
         style={{ width: '100%' }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={styles.header}>
-          <Image source={require('@/assets/images/fv-crop.png')} style={styles.logo} />
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Sign up to get started</Text>
-        </View>
-
-        <View style={styles.card}>
-          {/* 4. Update Inputs and add Error display */}
-          <View style={styles.inputWrapper}>
-            <View style={styles.inputContainer}>
-              <MaterialCommunityIcons name="account-outline" size={24} color={Colors.dark.icon} style={styles.icon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Name"
-                placeholderTextColor={Colors.dark.icon}
-                value={formData.name}
-                onChangeText={(text) => handleInputChange('name', text)}
-                autoCapitalize="words"
-              />
-            </View>
-            {errors?.name && <Text style={styles.errorText}>{errors.name[0]}</Text>}
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.header}>
+            <Image source={require('@/assets/images/fv-crop.png')} style={styles.logo} />
+            <Text style={styles.title}>Create Account</Text>
+            <Text style={styles.subtitle}>Sign up to get started</Text>
           </View>
 
-          <View style={styles.inputWrapper}>
-            <View style={styles.inputContainer}>
-              <MaterialCommunityIcons name="email-outline" size={24} color={Colors.dark.icon} style={styles.icon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Email"
-                placeholderTextColor={Colors.dark.icon}
-                value={formData.email}
-                onChangeText={(text) => handleInputChange('email', text)}
-                autoCapitalize="none"
-                keyboardType="email-address"
-              />
+          <View style={styles.card}>
+            {/* 4. Update Inputs and add Error display */}
+            <View style={styles.inputWrapper}>
+              <View style={styles.inputContainer}>
+                <MaterialCommunityIcons name="account-outline" size={24} color={Colors.dark.icon} style={styles.icon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Name"
+                  placeholderTextColor={Colors.dark.icon}
+                  value={formData.name}
+                  onChangeText={(text) => handleInputChange('name', text)}
+                  autoCapitalize="words"
+                />
+              </View>
+              {errors?.name && <Text style={styles.errorText}>{errors.name[0]}</Text>}
             </View>
-            {errors?.email && <Text style={styles.errorText}>{errors.email[0]}</Text>}
-          </View>
 
-          <View style={styles.inputWrapper}>
-            <View style={styles.inputContainer}>
-              <MaterialCommunityIcons name="lock-outline" size={24} color={Colors.dark.icon} style={styles.icon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Password"
-                placeholderTextColor={Colors.dark.icon}
-                value={formData.password}
-                onChangeText={(text) => handleInputChange('password', text)}
-                secureTextEntry
-              />
+            <View style={styles.inputWrapper}>
+              <View style={styles.inputContainer}>
+                <MaterialCommunityIcons name="email-outline" size={24} color={Colors.dark.icon} style={styles.icon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Email"
+                  placeholderTextColor={Colors.dark.icon}
+                  value={formData.email}
+                  onChangeText={(text) => handleInputChange('email', text)}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                />
+              </View>
+              {errors?.email && <Text style={styles.errorText}>{errors.email[0]}</Text>}
             </View>
-            {errors?.password && <Text style={styles.errorText}>{errors.password[0]}</Text>}
-          </View>
 
-          <View style={styles.inputWrapper}>
-            <View style={styles.inputContainer}>
-              <MaterialCommunityIcons name="lock-check-outline" size={24} color={Colors.dark.icon} style={styles.icon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Confirm Password"
-                placeholderTextColor={Colors.dark.icon}
-                value={formData.confirmPassword}
-                onChangeText={(text) => handleInputChange('confirmPassword', text)}
-                secureTextEntry
-              />
+            <View style={styles.inputWrapper}>
+              <View style={styles.inputContainer}>
+                <MaterialCommunityIcons name="lock-outline" size={24} color={Colors.dark.icon} style={styles.icon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Password"
+                  placeholderTextColor={Colors.dark.icon}
+                  value={formData.password}
+                  onChangeText={(text) => handleInputChange('password', text)}
+                  secureTextEntry
+                />
+              </View>
+              {errors?.password && <Text style={styles.errorText}>{errors.password[0]}</Text>}
             </View>
-            {errors?.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword[0]}</Text>}
+
+            <View style={styles.inputWrapper}>
+              <View style={styles.inputContainer}>
+                <MaterialCommunityIcons name="lock-check-outline" size={24} color={Colors.dark.icon} style={styles.icon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Confirm Password"
+                  placeholderTextColor={Colors.dark.icon}
+                  value={formData.confirmPassword}
+                  onChangeText={(text) => handleInputChange('confirmPassword', text)}
+                  secureTextEntry
+                />
+              </View>
+              {errors?.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword[0]}</Text>}
+            </View>
+
+            <Button
+              title="Sign Up"
+              onPress={handleSignUp}
+              isLoading={isAuthenticating}
+              textStyle={{ fontSize: 18, fontWeight: 'bold', color: '#FFFFFF' }}
+              style={{ backgroundColor: Colors.dark.tint, marginTop: 10 }}
+            />
+
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => router.back()}
+            >
+              <Text style={[styles.backText, { color: Colors.dark.tint }]}>Back to Login</Text>
+            </TouchableOpacity>
           </View>
-
-          <Button
-            title="Sign Up"
-            onPress={handleSignUp}
-            isLoading={isAuthenticating}
-            textStyle={{ fontSize: 18, fontWeight: 'bold', color: '#FFFFFF' }}
-            style={{ backgroundColor: Colors.dark.tint, marginTop: 10 }}
-          />
-
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <Text style={[styles.backText, { color: Colors.dark.tint }]}>Back to Login</Text>
-          </TouchableOpacity>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </LinearGradient>
   );

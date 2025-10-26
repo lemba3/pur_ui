@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Linking } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { useRouter } from 'expo-router';
-import * as Linking from 'expo-linking';
-import * as WebBrowser from 'expo-web-browser'; // Use WebBrowser for Hosted Link
 import api from '@/lib/api';
+import { useEffect, useState } from 'react';
 
 export default function PlaidHostedLinkScreen() {
   const router = useRouter();
@@ -22,21 +20,13 @@ export default function PlaidHostedLinkScreen() {
 
         if (!isMounted) return;
 
-        const result = await WebBrowser.openBrowserAsync(hosted_link_url);
+        // Open in the system browser, which handles universal links reliably.
+        await Linking.openURL(hosted_link_url);
 
-        if (!isMounted) return;
-
-        // Handle different WebBrowser results
-        if (result.type === 'cancel') {
-          // User explicitly cancelled
-          router.back();
-          return;
-        }
-
-        // Navigate back to tabs and prevent back navigation
-        await router.replace('/(tabs)');
-        await router.push('/(tabs)');
+        // The user will be returned to the app via the universal link.
+        // We can navigate back immediately so this screen isn't in the back stack.
         router.back();
+
       } catch (error: any) {
         if (!isMounted) return;
         console.error("Error: Failed to get link token.", error.response?.data || error.message);

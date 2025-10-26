@@ -11,7 +11,10 @@
     "ios": {
       "bundleIdentifier": "com.purui.app",
       "supportsTablet": true,
-      "icon": "./assets/images/icon.png"
+      "icon": "./assets/images/icon.png",
+      "associatedDomains": [
+        "applinks:forward-lungeous-manie.ngrok-free.dev"
+      ]
     },
     "android": {
       "package": "com.purui.app",
@@ -20,7 +23,24 @@
         "foregroundImage": "./assets/images/adaptive-icon.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "forward-lungeous-manie.ngrok-free.dev",
+              "pathPrefix": "/plaid-redirect"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ]
     },
     "web": {
       "output": "static",

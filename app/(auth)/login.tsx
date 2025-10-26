@@ -1,6 +1,6 @@
 import { useAuth } from '@/hooks/useAuth';
 import React, { useState } from 'react';
-import { View, TextInput, StyleSheet, Text, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import { View, TextInput, StyleSheet, Text, KeyboardAvoidingView, Platform, Image, ScrollView } from 'react-native';
 import { Link } from 'expo-router';
 import { Colors } from '@/constants/theme';
 import Button from '@/components/ui/button';
@@ -57,91 +57,98 @@ export default function Login() {
     >
       <KeyboardAvoidingView
         style={{ width: '100%' }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={styles.header}>
-          <Image source={require('@/assets/images/fv-crop.png')} style={styles.logo} />
-          <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>Sign in to continue</Text>
-        </View>
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.header}>
+            <Image source={require('@/assets/images/fv-crop.png')} style={styles.logo} />
+            <Text style={styles.title}>Welcome Back</Text>
+            <Text style={styles.subtitle}>Sign in to continue</Text>
+          </View>
 
-        <View style={styles.card}>
-          {/* 4. Update Inputs and add Error display */}
-          <View style={styles.inputWrapper}>
-            <View style={styles.inputContainer}>
-              <MaterialCommunityIcons name="email-outline" size={24} color={Colors.dark.icon} style={styles.icon} />
-              <TextInput
-                style={styles.input} placeholder="Email"
-                placeholderTextColor={Colors.dark.icon}
-                value={formData.email}
-                onChangeText={(text) => handleInputChange('email', text)}
-                autoCapitalize="none"
-                keyboardType="email-address"
-              />
+          <View style={styles.card}>
+            {/* 4. Update Inputs and add Error display */}
+            <View style={styles.inputWrapper}>
+              <View style={styles.inputContainer}>
+                <MaterialCommunityIcons name="email-outline" size={24} color={Colors.dark.icon} style={styles.icon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Email"
+                  placeholderTextColor={Colors.dark.icon}
+                  value={formData.email}
+                  onChangeText={(text) => handleInputChange('email', text)}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                />
+              </View>
+              {errors?.email && <Text style={styles.errorText}>{errors.email[0]}</Text>}
             </View>
-            {errors?.email && <Text style={styles.errorText}>{errors.email[0]}</Text>}
-          </View>
 
-          <View style={styles.inputWrapper}>
-            <View style={styles.inputContainer}>
-              <MaterialCommunityIcons name="lock-outline" size={24} color={Colors.dark.icon} style={styles.icon} />
-              <TextInput
-                style={styles.input} placeholder="Password"
-                placeholderTextColor={Colors.dark.icon}
-                value={formData.password}
-                onChangeText={(text) => handleInputChange('password', text)}
-                secureTextEntry
-              />
+            <View style={styles.inputWrapper}>
+              <View style={styles.inputContainer}>
+                <MaterialCommunityIcons name="lock-outline" size={24} color={Colors.dark.icon} style={styles.icon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Password"
+                  placeholderTextColor={Colors.dark.icon}
+                  value={formData.password}
+                  onChangeText={(text) => handleInputChange('password', text)}
+                  secureTextEntry
+                />
+              </View>
+              {errors?.password && <Text style={styles.errorText}>{errors.password[0]}</Text>}
             </View>
-            {errors?.password && <Text style={styles.errorText}>{errors.password[0]}</Text>}
-          </View>
 
-          <Button
-            title="Sign In"
-            onPress={handleSignIn} // Use new handler
-            isLoading={isAuthenticating && authMethod === 'email'}
-            textStyle={{ fontSize: 18, fontWeight: 'bold', color: '#FFFFFF' }}
-            style={{ backgroundColor: Colors.dark.tint, marginTop: 10 }}
-          />
-
-          <Link href="/forgot-password" style={styles.link}>
-            <Text style={[styles.linkText, { color: Colors.dark.tint, textAlign: 'right', width: '100%', marginTop: -20, marginBottom: 10 }]}>
-              Forgot Password?
-            </Text>
-          </Link>
-
-          <View style={styles.separatorContainer}>
-            <View style={styles.separatorLine} />
-            <Text style={styles.separatorText}>OR</Text>
-            <View style={styles.separatorLine} />
-          </View>
-
-          <Button
-            title="Sign In with Google"
-            onPress={signInWithGoogle}
-            isLoading={isAuthenticating && authMethod === 'google'}
-            style={{ backgroundColor: '#FFFFFF', marginTop: 10 }}
-            icon={<MaterialCommunityIcons name="google" size={20} color={Colors.dark.tint} style={{ marginRight: 10 }} />}
-            textStyle={{ fontSize: 18, fontWeight: 'bold', color: Colors.dark.tint }}
-          />
-
-          {Platform.OS === 'ios' && appleAuth.isSupported && (
             <Button
-              title="Sign In with Apple"
-              onPress={signInWithApple}
-              isLoading={isAuthenticating && authMethod === 'apple'}
-              style={{ backgroundColor: '#000000', marginTop: 10 }}
-              icon={<MaterialCommunityIcons name="apple" size={20} color={'#FFFFFF'} style={{ marginRight: 10 }} />}
+              title="Sign In"
+              onPress={handleSignIn} // Use new handler
+              isLoading={isAuthenticating && authMethod === 'email'}
               textStyle={{ fontSize: 18, fontWeight: 'bold', color: '#FFFFFF' }}
+              style={{ backgroundColor: Colors.dark.tint, marginTop: 10 }}
             />
-          )}
 
-          <Link href="/signup" style={styles.link}>
-            <Text style={[styles.linkText, { color: Colors.dark.tint }]}>
-              Don&apos;t have an account? Sign Up
-            </Text>
-          </Link>
-        </View>
+            <Link href="/forgot-password" style={styles.link}>
+              <Text style={[styles.linkText, { color: Colors.dark.tint, textAlign: 'right', width: '100%', marginTop: -20, marginBottom: 10 }]}>
+                Forgot Password?
+              </Text>
+            </Link>
+
+            <View style={styles.separatorContainer}>
+              <View style={styles.separatorLine} />
+              <Text style={styles.separatorText}>OR</Text>
+              <View style={styles.separatorLine} />
+            </View>
+
+            <Button
+              title="Sign In with Google"
+              onPress={signInWithGoogle}
+              isLoading={isAuthenticating && authMethod === 'google'}
+              style={{ backgroundColor: '#FFFFFF', marginTop: 10 }}
+              icon={<MaterialCommunityIcons name="google" size={20} color={Colors.dark.tint} style={{ marginRight: 10 }} />}
+              textStyle={{ fontSize: 18, fontWeight: 'bold', color: Colors.dark.tint }}
+            />
+
+            {Platform.OS === 'ios' && appleAuth.isSupported && (
+              <Button
+                title="Sign In with Apple"
+                onPress={signInWithApple}
+                isLoading={isAuthenticating && authMethod === 'apple'}
+                style={{ backgroundColor: '#000000', marginTop: 10 }}
+                icon={<MaterialCommunityIcons name="apple" size={20} color={'#FFFFFF'} style={{ marginRight: 10 }} />}
+                textStyle={{ fontSize: 18, fontWeight: 'bold', color: '#FFFFFF' }}
+              />
+            )}
+
+            <Link href="/signup" style={styles.link}>
+              <Text style={[styles.linkText, { color: Colors.dark.tint }]}>
+                Don&apos;t have an account? Sign Up
+              </Text>
+            </Link>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </LinearGradient>
 
