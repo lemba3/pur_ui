@@ -88,7 +88,7 @@ function RootLayoutNav() {
 
     // Set a small delay to prevent multiple rapid navigations
     navigationTimeoutRef.current = setTimeout(() => {
-      console.log('Navigating to reset password with token');
+      // console.log('Navigating to reset password with token');
       setLastHandledToken(token);
       setHasHandledInitialDeepLink(true);
       router.replace({
@@ -104,7 +104,7 @@ function RootLayoutNav() {
       if (!hasHandledInitialDeepLink && event.url.includes('reset-password')) {
         const token = new URL(event.url).searchParams.get('token');
         if (token) {
-          console.log('Received deep link with token');
+          // console.log('Received deep link with token');
           navigateToResetPassword(token);
         }
       }
@@ -132,7 +132,7 @@ function RootLayoutNav() {
           if (url?.includes('reset-password')) {
             const token = new URL(url).searchParams.get('token');
             if (token) {
-              console.log('Found initial deep link token');
+              // console.log('Found initial deep link token');
               navigateToResetPassword(token);
               return true;
             }

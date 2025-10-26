@@ -53,16 +53,16 @@ export default function HomeScreen() {
   }, [connectedBanks]);
 
   useEffect(() => {
-    console.log('[Debug] Component effect running, auth loading:', isAuthLoading, 'has session:', !!session);
+    // console.log('[Debug] Component effect running, auth loading:', isAuthLoading, 'has session:', !!session);
 
     const cleanupPusherSubscription = (userId: string) => {
       const channelName = `user-${userId}`;
-      console.log('[Debug] Cleaning up Pusher subscription for channel:', channelName);
+      // console.log('[Debug] Cleaning up Pusher subscription for channel:', channelName);
       const channel = pusher.channel(channelName);
       if (channel) {
         channel.unbind_all();
         pusher.unsubscribe(channelName);
-        console.log('[Debug] Successfully cleaned up Pusher subscription');
+        // console.log('[Debug] Successfully cleaned up Pusher subscription');
       }
     };
 
@@ -85,15 +85,15 @@ export default function HomeScreen() {
 
     const existingChannel = pusher.channel(channelName);
     if (existingChannel) {
-      console.log('[Debug] Channel already exists, skipping subscription');
+      // console.log('[Debug] Channel already exists, skipping subscription');
       return;
     }
 
-    console.log('[Debug] Creating new Pusher subscription for channel:', channelName);
+    // console.log('[Debug] Creating new Pusher subscription for channel:', channelName);
     const channel = pusher.subscribe(channelName);
 
     const handleItemAdded = () => {
-      console.log('[Debug] Pusher event received: item-added');
+      // console.log('[Debug] Pusher event received: item-added');
       invalidateBanks();
     };
 

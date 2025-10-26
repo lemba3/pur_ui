@@ -31,11 +31,11 @@ export default function ResetPassword() {
 
   useEffect(() => {
     const handleDeepLink = (event: { url: string }) => {
-      console.log('Deep link received:', event.url);
+      // console.log('Deep link received:', event.url);
       const url = new URL(event.url);
       const token = url.searchParams.get('token');
       if (token) {
-        console.log('Token found:', token);
+        // console.log('Token found:', token);
         setToken(token);
       }
     };
@@ -43,7 +43,7 @@ export default function ResetPassword() {
     // Handle deep link if app was opened with one
     Linking.getInitialURL().then((url) => {
       if (url) {
-        console.log('Initial URL:', url);
+        // console.log('Initial URL:', url);
         handleDeepLink({ url });
       }
     });
@@ -60,7 +60,7 @@ export default function ResetPassword() {
   const params = useLocalSearchParams<{ token: string }>();
   useEffect(() => {
     if (params.token && !token) {
-      console.log('Token from params:', params.token);
+      // console.log('Token from params:', params.token);
       setToken(params.token);
     }
   }, [params.token]);

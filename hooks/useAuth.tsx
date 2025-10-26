@@ -191,9 +191,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error: any) {
       console.error('Google Sign In Error:', error);
       if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        console.log('User cancelled the login flow');
+        // console.log('User cancelled the login flow');
       } else if (error.code === statusCodes.IN_PROGRESS) {
-        console.log('Sign in is in progress');
+        // console.log('Sign in is in progress');
       } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
         alert('Play services not available');
       } else {
@@ -223,7 +223,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error: any) {
       if (error.code === appleAuth.Error.CANCELED) {
-        console.log('User cancelled the Apple Sign In flow');
+        // console.log('User cancelled the Apple Sign In flow');
       } else {
         console.error('Apple Sign In Error:', error);
         alert('Apple Sign In failed: ' + error.message);
